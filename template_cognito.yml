@@ -6,18 +6,23 @@ Parameters:
   CognitoDomain:
     Type: String
     AllowedPattern: ^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$
+    Default: 'nva-test'
+    Description: The domain name for the domain that hosts the sign-up and sign-in pages for your application.
 
   FeideMetadataURL:
     Type: String
     Default:  https://idp-test.feide.no/simplesaml/saml2/idp/metadata.php
+    Description: Link to the the identity provider details.
 
   UserPoolClientCallbackURLs:
     Type: List<String>
     Default: 'https://frontend.test.nva.aws.unit.no'
+    Description: A list of allowed redirect (callback) URLs for the identity providers.
 
   UserPoolClientLogoutURLs:
     Type: List<String>
     Default: 'https://frontend.test.nva.aws.unit.no/logout'
+    Description: A list of allowed logout URLs for the identity providers.
 
 Resources:
 
