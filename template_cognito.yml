@@ -1,0 +1,338 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation parent template for setting up Cognito for Feide login
+
+Parameters:
+
+  CognitoDomain:
+    Type: String
+    AllowedPattern: ^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$
+
+  FeideMetadataURL:
+    Type: String
+    Default:  https://idp-test.feide.no/simplesaml/saml2/idp/metadata.php
+
+  UserPoolClientCallbackURLs:
+    Type: List<String>
+    Default: 'https://frontend.test.nva.aws.unit.no'
+
+  UserPoolClientLogoutURLs:
+    Type: List<String>
+    Default: 'https://frontend.test.nva.aws.unit.no/logout'
+
+Resources:
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [lambda.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: writeLog
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
+        - PolicyName: AddUserToGroup
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminAddUserToGroup'
+                  - cognito-idp:AdminUpdateUserAttributes
+                Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
+
+  PostAuthenticationTrigger:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Runtime: python3.7
+      Role: !GetAtt ExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+
+          import boto3
+
+          client = boto3.client('cognito-idp')
+
+
+          def add_user_attributes(event):
+              affiliation = event.get("request", {}).get("userAttributes", {}).get('custom:affiliation')
+
+              if 'staff' in affiliation:
+                  client.admin_add_user_to_group(
+                      UserPoolId=event['userPoolId'],
+                      Username=event['userName'],
+                      GroupName='PublisherGroup'
+                  )
+
+                  client.admin_update_user_attributes(
+                      UserPoolId=event['userPoolId'],
+                      Username=event['userName'],
+                      UserAttributes=[
+                          {
+                              'Name': 'custom:applicationRoles',
+                              'Value': 'Publisher'
+                          }
+                      ]
+                  )
+
+              client.admin_update_user_attributes(
+                  UserPoolId=event['userPoolId'],
+                  Username=event['userName'],
+                  UserAttributes=[
+                      {'Name': 'custom:application', 'Value': 'NVA'},
+                      {'Name': 'custom:identifiers',
+                       'Value': 'feide:' + event.get("request", {}).get("userAttributes", {}).get('custom:feideId')}
+                  ]
+              )
+
+
+          def handler(event, context):
+              affiliation = event.get("request", {}).get("userAttributes", {}).get('custom:affiliation')
+
+              if affiliation is None:
+                  print(json.dumps(event, default=str))
+                  raise Exception('Missing affiliation attribute')
+
+              add_user_attributes(event)
+              return event
+
+  InvokePostAuthenticationTriggerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt PostAuthenticationTrigger.Arn
+      Principal: cognito-idp.amazonaws.com
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      UsernameAttributes: [email]
+      EmailConfiguration:
+        EmailSendingAccount: 'COGNITO_DEFAULT'
+      MfaConfiguration: 'OFF'
+      LambdaConfig:
+        PostAuthentication: !GetAtt PostAuthenticationTrigger.Arn
+      Schema:
+        - Name: affiliation
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: feideId
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: commonName
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: orgName
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: orgNumber
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: application
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: forwardedFor
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: applicationRoles
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: identifiers
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref UserPool
+      Domain: !Ref CognitoDomain
+
+  UserPoolIdentityProviderFeide:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Properties:
+      AttributeMapping:
+        custom:orgName: eduPersonOrgDN:eduOrgLegalName
+        custom:commonName: cn
+        name: displayName
+        custom:orgNumber: eduPersonOrgDN:norEduOrgNIN
+        custom:feideId: eduPersonPrincipalName
+        email: mail
+        custom:affiliation: eduPersonAffiliation
+      UserPoolId: !Ref UserPool
+      ProviderName: !Sub '${AWS::StackName}-FeideIdP'
+      ProviderType: SAML
+      ProviderDetails:
+        MetadataURL: !Ref FeideMetadataURL
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      GenerateSecret: false
+      SupportedIdentityProviders:
+        - !Ref UserPoolIdentityProviderFeide
+      UserPoolId: !Ref UserPool
+      CallbackURLs: !Ref UserPoolClientCallbackURLs
+      LogoutURLs: !Ref UserPoolClientLogoutURLs
+      AllowedOAuthFlowsUserPoolClient: True
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - openid
+
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      AllowUnauthenticatedIdentities: True
+      CognitoIdentityProviders:
+        -
+          ClientId: !Ref UserPoolClient
+          ProviderName: !Sub
+            - cognito-idp.${region}.amazonaws.com/${client}
+            - { region: !Ref "AWS::Region", client: !Ref UserPool}
+
+  # IAM role used for authenticated users
+  FeideAuthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Federated: 'cognito-identity.amazonaws.com'
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud':
+                  Ref: IdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+      Policies:
+        - PolicyName: 'CognitoAuthorizedPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                  - 'cognito-identity:*'
+                Resource: ['*']
+
+  # IAM role used for unauthenticated users
+  UnauthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Federated: 'cognito-identity.amazonaws.com'
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud':
+                  Ref: IdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': unauthenticated
+      Policies:
+        - PolicyName: 'CognitoUnauthenticatedRolePolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                Resource: ['*']
+
+  # Assigns the roles to the Identity Pool
+  IdentityPoolRoleMapping:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      Roles:
+        authenticated: !GetAtt FeideAuthenticatedRole.Arn
+        unauthenticated: !GetAtt UnauthenticatedRole.Arn
+
+  # IAM role used for users allowed to publish
+  PublisherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Federated: 'cognito-identity.amazonaws.com'
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud':
+                  Ref: IdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+      Policies:
+        - PolicyName: PublisherPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                Resource: ['*']
+
+  FeideAuthenticatedGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      Description: Common users authenticated with Feide
+      RoleArn: !GetAtt FeideAuthenticatedRole.Arn
+      UserPoolId: !Ref UserPool
+
+  PublisherGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      Description: Users allowed to publish
+      RoleArn: !GetAtt PublisherRole.Arn
+      UserPoolId: !Ref UserPool
