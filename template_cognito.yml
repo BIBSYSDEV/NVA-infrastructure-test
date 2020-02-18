@@ -1,6 +1,14 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: CloudFormation parent template for setting up Cognito for Feide login
-
+#
+#  After Cognito has been created it must be registered with Feide
+#  The user pools service provider URN is: urn:amazon:cognito:sp:<user_pool_id>
+#
+#  Information needed is:
+#
+#    Amazon Cognito Domain:  https://nva-test.auth.eu-west-1.amazoncognito.com
+#    Amazon Cognito URN:     urn:amazon:cognito:sp:eu-west-1_JRPabH2jf
+#
 Parameters:
 
   CognitoDomain:
@@ -54,7 +62,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - cognito-idp:AdminAddUserToGroup'
+                  - cognito-idp:AdminAddUserToGroup
                   - cognito-idp:AdminUpdateUserAttributes
                 Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
 
@@ -125,6 +133,7 @@ Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
+      UserPoolName: NVA-UserPool-test
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
       UsernameAttributes: [email]
@@ -138,7 +147,23 @@ Resources:
           AttributeDataType: String
           Mutable: true
           Required: false
+        - Name: application
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: applicationRoles
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: commonName
+          AttributeDataType: String
+          Mutable: true
+          Required: false
         - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: feideTargetedId
           AttributeDataType: String
           Mutable: true
           Required: false
@@ -146,11 +171,23 @@ Resources:
           AttributeDataType: String
           Mutable: true
           Required: false
+        - Name: forwardedFor
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: identifiers
+          AttributeDataType: String
+          Mutable: true
+          Required: false
         - Name: name
           AttributeDataType: String
           Mutable: true
           Required: false
-        - Name: commonName
+        - Name: orgEmail
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: orgLegalName
           AttributeDataType: String
           Mutable: true
           Required: false
@@ -162,19 +199,11 @@ Resources:
           AttributeDataType: String
           Mutable: true
           Required: false
-        - Name: application
+        - Name: schoolList
           AttributeDataType: String
           Mutable: true
           Required: false
-        - Name: forwardedFor
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: applicationRoles
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: identifiers
+        - Name: yearOfBirth
           AttributeDataType: String
           Mutable: true
           Required: false
@@ -189,13 +218,20 @@ Resources:
     Type: AWS::Cognito::UserPoolIdentityProvider
     Properties:
       AttributeMapping:
-        custom:orgName: eduPersonOrgDN:eduOrgLegalName
-        custom:commonName: cn
-        name: displayName
-        custom:orgNumber: eduPersonOrgDN:norEduOrgNIN
-        custom:feideId: eduPersonPrincipalName
-        email: mail
         custom:affiliation: eduPersonAffiliation
+        custom:commonName: cn
+        custom:feideId: eduPersonPrincipalName
+        custom:feideTargetedId: eduPersonTargetedID
+        custom:orgLegalName: eduPersonOrgDN:eduOrgLegalName
+        name: displayName
+        custom:orgEmail: eduPersonOrgDN:mail
+        custom:orgName: eduPersonOrgDN:o
+        custom:orgNumber: eduPersonOrgDN:norEduOrgNIN
+        custom:schoolList: feideSchoolList
+        custom:yearOfBirth: feideYearOfBirth
+        given_name: givenName
+        email: mail
+        family_name: sn
       UserPoolId: !Ref UserPool
       ProviderName: !Sub '${AWS::StackName}-FeideIdP'
       ProviderType: SAML
@@ -331,6 +367,7 @@ Resources:
   FeideAuthenticatedGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
+      GroupName: FeideAuthenticatedGroup
       Description: Common users authenticated with Feide
       RoleArn: !GetAtt FeideAuthenticatedRole.Arn
       UserPoolId: !Ref UserPool
@@ -338,6 +375,7 @@ Resources:
   PublisherGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
+      GroupName: PublisherGroup
       Description: Users allowed to publish
       RoleArn: !GetAtt PublisherRole.Arn
       UserPoolId: !Ref UserPool

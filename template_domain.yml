@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: Setup an hostedzone/domain
+
+
+Parameters:
+
+
+  CustomDomain:
+    Type: String
+    Description: What is the custom-domain
+    Default: api.test.nva.aws.unit.no
+
+
+Resources:
+
+  HostedZoneCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: String
+      DomainValidationOptions:
+        - DomainValidationOption
+      SubjectAlternativeNames:
+        - String
+      Tags:
+        - Tag
+      ValidationMethod: String
+
+  HostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      HostedZoneConfig:
+        HostedZoneConfig
+      HostedZoneTags:
+        - HostedZoneTag
+      Name: String
+      QueryLoggingConfig:
+        QueryLoggingConfig
+      VPCs:
+        - VPC
