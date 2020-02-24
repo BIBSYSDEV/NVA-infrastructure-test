@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Common deployment of lambdas as SAR Applications
+
+Parameters:
+  CognitoAuthorizerArn:
+    Type: String
+    Description: Reference to Cognito UserPool for the stage
+    Default: '{{resolve:ssm:CognitoAuthorizerArn:1}}'
+  CustomDomain:
+    Type: String
+    Description: Custom API to connect this lambda to
+    Default: 'api.test.nva.aws.unit.no'
+
+Resources:
+  NVAMultipartupload:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NVA-Multipart-upload
+        SemanticVersion: 1.0.0
+      Parameters:
+        # Reference to Cognito UserPool for the stage
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        # Custom API to connect this lambda to
+        CustomDomain: !Ref CustomDomain
+        # Base path mapping in CustomDomain
+        CustomDomainBasePath: 'upload'
+        # S3 Bucket to upload files to
+        S3UploadBucket: 'nva-storage-test'
+
+  NVADOIProxy:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NVA-DOI-Proxy
+        SemanticVersion: 1.0.0
+      Parameters:
+        # Reference to Cognito UserPool for the stage
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        # Custom API to connect this lambda to
+        CustomDomain: !Ref CustomDomain
+        # Base path mapping in CustomDomain
+        CustomDomainBasePath: 'doi'

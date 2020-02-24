@@ -252,6 +252,7 @@ Resources:
         - code
       AllowedOAuthScopes:
         - openid
+        - aws.cognito.signin.user.admin
 
   IdentityPool:
     Type: AWS::Cognito::IdentityPool
@@ -379,3 +380,61 @@ Resources:
       Description: Users allowed to publish
       RoleArn: !GetAtt PublisherRole.Arn
       UserPoolId: !Ref UserPool
+
+
+  CognitoAuthorizerArnProperty:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: ARN for the cognito userpool used to authorize users
+      Name: CognitoAuthorizerArn
+      Tier: Standard
+      Type: String
+      Value: !GetAtt UserPool.Arn
+
+  CognitoIdentityPoolIdProperty:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Identifier of the IdentityPool assosiated with the UserPool
+      Name: REACT_APP_AWS_COGNITO_IDENTITY_POOL_ID
+      Tier: Standard
+      Type: String
+      Value: !Ref IdentityPool
+
+  CognitoUserPoolIdProperty:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Identifier of the UserPool
+      Name: REACT_APP_AWS_USER_POOLS_ID
+      Tier: Standard
+      Type: String
+      Value: !Ref UserPool
+
+  CognitoUserPoolAppClientIdProperty:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Identifier to use for the app clients to access this user pool
+      Name: REACT_APP_AWS_USER_POOLS_WEB_CLIENT_ID
+      Tier: Standard
+      Type: String
+      Value: !Ref UserPoolClient
+
+  CognitoDomainProperty:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Address of Cognito login endpoint
+      Name: REACT_APP_DOMAIN
+      Tier: Standard
+      Type: String
+      Value: !Ref CognitoDomain
+
+
+Outputs:
+  CognitoIdentityPoolId:
+    Description: Identifier of the IdentityPool assosiated with the UserPool
+    Value: !Ref IdentityPool
+  CognitoUserPoolId:
+    Description: Identifier of the UserPool in Cognito
+    Value: !Ref UserPool
+  CognitoUserPoolAppClientId:
+    Description: Identifier to use for the app clients to access this user pool
+    Value: !Ref UserPoolClient
