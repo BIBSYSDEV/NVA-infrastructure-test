@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Deployment of NVA from SAR
+
+Parameters:
+  CognitoAuthorizerArn:
+    Type: String
+    Description: Reference to Cognito UserPool for the stage
+  AmazonCognitoDomain:
+    Type: String
+    Description: Domain to use for the sign-up and sign-in pages that are hosted by Amazon Cognito
+  BackendDomain:
+    Type: String
+    Description: Domainname for the backend api
+  CognitoIdentityPoolId:
+    Type: String
+    Description: Identifier of the IdentityPool assosiated with the UserPool
+  DomainCertificateArn:
+    Type: String
+    Description: ARN  of certificate to assign to the assosiated Domain
+  FrontendDomain:
+    Type: String
+    Description: Domainname to distribute the fronted application onto
+  RedirectSignInUrl:
+    Type: String
+  RedirectSignOutUrl:
+    Type: String
+  UserPoolAppClientId:
+    Type: String
+    Description: Identifier to use for the app clients to access this user pool
+  UserPoolId:
+    Type: String
+    Description: Identifier of the UserPool in Cognito
+  BareApiKey:
+    Type: String
+    Description: Key to access bare
+    NoEcho: true
+  BareHost:
+    Type: String
+    Description: Address to bare
+
+
+Resources:
+
+  NVAFrontend:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NVA-Frontend
+        SemanticVersion: 1.1.1
+      Parameters:
+        AmazonCognitoDomain: !Ref AmazonCognitoDomain
+        FrontendDomain: !Ref FrontendDomain
+        BackendDomain: !Ref BackendDomain
+        DomainCertificateArn: !Ref DomainCertificateArn
+        CognitoIdentityPoolId: !Ref CognitoIdentityPoolId
+        UserPoolId: !Ref UserPoolId
+        UserPoolAppClientId: !Ref UserPoolAppClientId
+        RedirectSignInUrl: !Ref RedirectSignInUrl
+        RedirectSignOutUrl: !Ref RedirectSignOutUrl
+
+  NVADOIProxy:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NVA-DOI-Proxy
+        SemanticVersion: 1.0.0
+      Parameters:
+        # Reference to Cognito UserPool for the stage
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        # Custom API to connect this lambda to
+        CustomDomain: !Ref BackendDomain
+        # Base path mapping in CustomDomain
+        CustomDomainBasePath: doi
+
+  NvaDoiTransformer:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
+        SemanticVersion: 1.0.0
+      Parameters:
+        # Reference to Cognito UserPool for the stage
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        # Custom API to connect this lambda to
+        CustomDomain: !Ref BackendDomain
+        # Base path mapping in CustomDomain
+        CustomDomainBasePath: doi-transform
+
+  UploadMultipart:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/UploadMultipart
+        SemanticVersion: 1.0.0
+      Parameters:
+        # Reference to Cognito UserPool for the stage
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        # Custom API to connect this lambda to
+        CustomDomain: !Ref BackendDomain
+        # Base path mapping in CustomDomain
+        CustomDomainBasePath: upload
+        # S3 Bucket to upload files to
+        S3UploadBucket: nva-storage-test
+
+  PersonData:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PersonData
+        SemanticVersion: 1.0.0
+      Parameters:
+        # Reference to Cognito UserPool for the stage
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        # Custom API to connect this lambda to
+        CustomDomain: person
+        # Base path mapping in CustomDomain
+        CustomDomainBasePath: !Ref BackendDomain
+        # Key to access bare
+        BareApiKey: !Ref BareApiKey
+        # Address to bare
+        BareHost: !Ref BareHost
+
