@@ -148,3 +148,6 @@ Resources:
         CustomDomain: !Ref BackendDomain
         # Base path mapping in CustomDomain
         CustomDomainBasePath: institution
+
+
+
