@@ -38,7 +38,9 @@ Parameters:
   BareHost:
     Type: String
     Description: Address to bare
-
+  AlmaSruHost:
+    Type: String
+    Description: Address to Alma-SRU
 
 Resources:
 
@@ -149,5 +151,20 @@ Resources:
         # Base path mapping in CustomDomain
         CustomDomainBasePath: institution
 
+  SruLastPublication:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/SruLastPublication
+        SemanticVersion: 1.0.0
+      Parameters:
+        # Reference to Cognito UserPool for the stage
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        # Custom API to connect this lambda to
+        CustomDomain: !Ref BackendDomain
+        # Base path mapping in CustomDomain
+        CustomDomainBasePath: alma
+        # Address to Alma-SRU
+        AlmaSruHost: !Ref AlmaSruHost
 
 
