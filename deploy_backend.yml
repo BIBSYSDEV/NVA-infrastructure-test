@@ -6,31 +6,9 @@ Parameters:
   CognitoAuthorizerArn:
     Type: String
     Description: Reference to Cognito UserPool for the stage
-  AmazonCognitoDomain:
-    Type: String
-    Description: URL to the the sign-up and sign-in pages that are hosted by Amazon Cognito
   BackendDomain:
     Type: String
     Description: Domainname for the backend api
-  CognitoIdentityPoolId:
-    Type: String
-    Description: Identifier of the IdentityPool assosiated with the UserPool
-  DomainCertificateArn:
-    Type: String
-    Description: ARN  of certificate to assign to the assosiated Domain
-  FrontendDomain:
-    Type: String
-    Description: Domainname to distribute the fronted application onto
-  RedirectSignInUrl:
-    Type: String
-  RedirectSignOutUrl:
-    Type: String
-  UserPoolAppClientId:
-    Type: String
-    Description: Identifier to use for the app clients to access this user pool
-  UserPoolId:
-    Type: String
-    Description: Identifier of the UserPool in Cognito
   BareApiKey:
     Type: String
     Description: Key to access bare
@@ -43,23 +21,6 @@ Parameters:
     Description: Address to Alma-SRU
 
 Resources:
-
-  NVAFrontend:
-    Type: AWS::Serverless::Application
-    Properties:
-      Location:
-        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NVA-Frontend
-        SemanticVersion: 1.1.1
-      Parameters:
-        AmazonCognitoDomain: !Ref AmazonCognitoDomain
-        FrontendDomain: !Ref FrontendDomain
-        BackendDomain: !Ref BackendDomain
-        DomainCertificateArn: !Ref DomainCertificateArn
-        CognitoIdentityPoolId: !Ref CognitoIdentityPoolId
-        UserPoolId: !Ref UserPoolId
-        UserPoolAppClientId: !Ref UserPoolAppClientId
-        RedirectSignInUrl: !Ref RedirectSignInUrl
-        RedirectSignOutUrl: !Ref RedirectSignOutUrl
 
   SruLastPublication:  # nva-alma-proxy
     Type: AWS::Serverless::Application
