@@ -87,7 +87,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NVA-Frontend
         SemanticVersion: 1.1.2
       Parameters:
-        AlmaApiUrl: !Ref AlmaSruHost
+        AlmaApiUrl: !Ref AlmaApiUrl
         AmazonCognitoDomain: !Ref AmazonCognitoDomain
         FrontendDomain: !Ref FrontendDomain
         BackendDomain: !Ref BackendDomain
@@ -104,9 +104,8 @@ Resources:
 
   BackendLambdas:
     Type: AWS::CloudFormation::Stack
-    Description: Backend lambdas
     Properties:
-      TemplateURL: !Sub "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/deploy_backend.yml"
+      TemplateURL: "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/deploy_backend.yml"
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
         BackendDomain: !Ref BackendDomain
