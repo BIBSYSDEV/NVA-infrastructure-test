@@ -6,19 +6,24 @@ Parameters:
   CognitoAuthorizerArn:
     Type: String
     Description: Reference to Cognito UserPool for the stage
+    Default: arn:aws:cognito-idp:eu-west-1:812481234721:userpool/eu-west-1_wsHsxCiT4
   BackendDomain:
     Type: String
     Description: Domainname for the backend api
+    Default: api.test.nva.aws.unit.no
   BareApiKey:
     Type: String
     Description: Key to access bare
     NoEcho: true
+    Default: '{{resolve:secretsmanager:bareApiKey:SecretString}}'
   BareHost:
     Type: String
     Description: Address to bare
+    Default: alfa-a.bibsys.no
   AlmaSruHost:
     Type: String
     Description: Address to Alma-SRU
+    Default: bibsys.alma.exlibrisgroup.com/view/sru/47BIBSYS_NETWORK
 
 Resources:
 
@@ -70,20 +75,20 @@ Resources:
         CustomDomainBasePath: upload
         S3UploadBucket: nva-storage-test # S3 Bucket to upload files to  - refer to template?
 
-  PersonData: # nva-bare-proxy
+  PersonData:
     Type: AWS::Serverless::Application
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PersonData
         SemanticVersion: 1.0.0
       Parameters:
-        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-        CustomDomain: person
-        CustomDomainBasePath: !Ref BackendDomain
-        BareApiKey: !Ref BareApiKey
+        BareApiKey: '{{resolve:secretsmanager:bareApiKey:SecretString}}'
         BareHost: !Ref BareHost
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: person
 
-  NvaPublicationApi:  # nva-publication-api
+  NvaPublicationApi: # nva-publication-api
     Type: AWS::Serverless::Application
     Properties:
       Location:
@@ -91,8 +96,8 @@ Resources:
         SemanticVersion: 1.0.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-        CustomDomainBasePath: !Ref BackendDomain
-        CustomDomain: publication
+        CustomDomainBasePath: publication
+        CustomDomain: !Ref BackendDomain
 
   PublicationChannelRegister: # nva-channel-registry
     Type: AWS::Serverless::Application
