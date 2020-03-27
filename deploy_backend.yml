@@ -75,7 +75,7 @@ Resources:
         CustomDomainBasePath: upload
         S3UploadBucket: nva-storage-test # S3 Bucket to upload files to  - refer to template?
 
-  PersonData:
+  PersonData: # nva-bare-proxy
     Type: AWS::Serverless::Application
     Properties:
       Location:
