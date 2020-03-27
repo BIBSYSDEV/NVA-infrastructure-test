@@ -6,7 +6,7 @@ Parameters:
   AmazonCognitoDomain:
     Type: String
     Description: URL to the the sign-up and sign-in pages that are hosted by Amazon Cognito
-    Default: https://nva-test.auth.eu-west-1.amazoncognito.com
+    Default: nva-test.auth.eu-west-1.amazoncognito.com  # introduce protocaol https
   BackendDomain:
     Type: String
     Description: Domainname for the backend api
