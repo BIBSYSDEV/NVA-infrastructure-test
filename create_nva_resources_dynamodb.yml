@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Persisting NVA resources.
+
+Parameters:
+  NvaResourcesTableName:
+    Description: Name to use for table persisting NVA resources.
+    Type: String
+    Default: nva_resources
+
+Resources:
+  NvaResourcesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref NvaResourcesTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: identifier
+          AttributeType: S
+        - AttributeName: modifiedDate
+          AttributeType: S
+        - AttributeName: publisherId
+          AttributeType: S
+        - AttributeName: publisherOwnerDate
+          AttributeType: S
+        - AttributeName: owner
+          AttributeType: S
+      KeySchema:
+        - AttributeName: identifier
+          KeyType: HASH
+        - AttributeName: modifiedDate
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: ByPublisher
+          KeySchema:
+            - AttributeName: publisherId
+              KeyType: HASH
+            - AttributeName: publisherOwnerDate
+              KeyType: RANGE
+          Projection:
+            NonKeyAttributes:
+              - entityDescription.mainTitle
+              - createdDate
+              - modifiedDate
+              - identifier
+              - status
+            ProjectionType: INCLUDE
+
+Outputs:
+  NvaResourcesTableOutput:
+    Description: NVA resources table name.
+    Value: !Ref NvaResourcesTable

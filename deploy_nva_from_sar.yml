@@ -49,7 +49,7 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NVA-Frontend
-        SemanticVersion: 1.1.1
+        SemanticVersion: 1.1.2
       Parameters:
         AmazonCognitoDomain: !Ref AmazonCognitoDomain
         FrontendDomain: !Ref FrontendDomain
@@ -66,30 +66,31 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/SruLastPublication
-        SemanticVersion: 1.0.0
+        SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: alma
         AlmaSruHost: !Ref AlmaSruHost
 
-  NvaDoiTransformer: # nva-doi-transformer
-    Type: AWS::Serverless::Application
-    Properties:
-      Location:
-        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
-        SemanticVersion: 1.0.0
-      Parameters:
-        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
-        CustomDomainBasePath: doi-transform
+
+#  NvaDoiTransformer: # nva-doi-transformer
+#    Type: AWS::Serverless::Application
+#    Properties:
+#      Location:
+#        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
+#        SemanticVersion: X.X.X
+#      Parameters:
+#        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+#        CustomDomain: !Ref BackendDomain
+#        CustomDomainBasePath: doi-transform
 
   ResourceApi: # nva-resource-api
     Type: AWS::Serverless::Application
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/ResourceApi
-        SemanticVersion: 1.0.0
+        SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
@@ -102,7 +103,7 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/UploadMultipart
-        SemanticVersion: 1.0.0
+        SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
@@ -114,7 +115,7 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PersonData
-        SemanticVersion: 1.0.0
+        SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
         CustomDomain: person
@@ -127,40 +128,40 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaPublicationApi
-        SemanticVersion: 1.0.0
+        SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
         CustomDomainBasePath: !Ref BackendDomain
         CustomDomain: publication
 
-  PublicationChannelRegister: # nva-channel-registry
-    Type: AWS::Serverless::Application
-    Properties:
-      Location:
-        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PublicationChannelRegister
-        SemanticVersion: 1.0.0
-      Parameters:
-        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
-        CustomDomainBasePath: publication-channel
+#  PublicationChannelRegister: # nva-channel-registry
+#    Type: AWS::Serverless::Application
+#    Properties:
+#      Location:
+#        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PublicationChannelRegister
+#        SemanticVersion: X.X.X
+#      Parameters:
+#        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+#        CustomDomain: !Ref BackendDomain
+#        CustomDomainBasePath: publication-channel
 
-  Institutions: # nva-cristin-institutions
-    Type: AWS::Serverless::Application
-    Properties:
-      Location:
-        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/Institutions
-        SemanticVersion: 1.0.0
-      Parameters:
-        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
-        CustomDomainBasePath: institution
+#  Institutions: # nva-cristin-institutions
+#    Type: AWS::Serverless::Application
+#    Properties:
+#      Location:
+#        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/Institutions
+#        SemanticVersion: X.X.X
+#      Parameters:
+#        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+#        CustomDomain: !Ref BackendDomain
+#        CustomDomainBasePath: institution
 
   nvafetchdoi: # nva-fetch-doi
     Type: AWS::Serverless::Application
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/nva-fetch-doi
-        SemanticVersion: 1.0.0
+        SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
@@ -171,7 +172,7 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/Projects
-        SemanticVersion: 1.0.0
+        SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
@@ -181,8 +182,8 @@ Resources:
     Type: AWS::Serverless::Application
     Properties:
       Location:
-        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NVA-DOI-Proxy
-        SemanticVersion: 1.0.0
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/DoiProxy
+        SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
