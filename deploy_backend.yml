@@ -84,10 +84,11 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-        CustomDomain: person
-        CustomDomainBasePath: !Ref BackendDomain
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: person
         BareApiKey: !Ref BareApiKey
         BareHost: !Ref BareHost
+
 
   NvaPublicationApi:  # nva-publication-api
     Type: AWS::Serverless::Application
@@ -97,8 +98,10 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-        CustomDomainBasePath: !Ref BackendDomain
-        CustomDomain: publication
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: publication
+        PublicationsTableName: 'nva_resources'
+        PublicationsByOwnerIndexName: 'ByPublisher'
 
   #  PublicationChannelRegister: # nva-channel-registry
   #    Type: AWS::Serverless::Application
