@@ -74,16 +74,16 @@ Resources:
         AlmaSruHost: !Ref AlmaSruHost
 
 
-  #  NvaDoiTransformer: # nva-doi-transformer
-  #    Type: AWS::Serverless::Application
-  #    Properties:
-  #      Location:
-  #        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
-  #        SemanticVersion: X.X.X
-  #      Parameters:
-  #        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-  #        CustomDomain: !Ref BackendDomain
-  #        CustomDomainBasePath: doi-transform
+  NvaDoiTransformer: # nva-doi-transformer
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
+        SemanticVersion: 0.1.1
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: doi-transform
 
   ResourceApi: # nva-resource-api
     Type: AWS::Serverless::Application
