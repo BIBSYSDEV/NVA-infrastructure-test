@@ -1,0 +1,181 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Deployment of NVA from SAR
+
+Parameters:
+  CognitoAuthorizerArn:
+    Type: String
+    Description: Reference to Cognito UserPool for the stage
+  AmazonCognitoDomain:
+    Type: String
+    Description: URL to the the sign-up and sign-in pages that are hosted by Amazon Cognito
+  BackendDomain:
+    Type: String
+    Description: Domainname for the backend api
+  CognitoIdentityPoolId:
+    Type: String
+    Description: Identifier of the IdentityPool assosiated with the UserPool
+  DomainCertificateArn:
+    Type: String
+    Description: ARN  of certificate to assign to the assosiated Domain
+  FrontendDomain:
+    Type: String
+    Description: Domainname to distribute the fronted application onto
+  RedirectSignInUrl:
+    Type: String
+  RedirectSignOutUrl:
+    Type: String
+  UserPoolAppClientId:
+    Type: String
+    Description: Identifier to use for the app clients to access this user pool
+  UserPoolId:
+    Type: String
+    Description: Identifier of the UserPool in Cognito
+  BareApiKey:
+    Type: String
+    Description: Key to access bare
+    NoEcho: true
+  BareHost:
+    Type: String
+    Description: Address to bare
+  AlmaSruHost:
+    Type: String
+    Description: Address to Alma-SRU
+
+Resources:
+
+  NVAFrontend:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NVA-Frontend
+        SemanticVersion: 1.1.2
+      Parameters:
+        AmazonCognitoDomain: !Ref AmazonCognitoDomain
+        FrontendDomain: !Ref FrontendDomain
+        BackendDomain: !Ref BackendDomain
+        DomainCertificateArn: !Ref DomainCertificateArn
+        CognitoIdentityPoolId: !Ref CognitoIdentityPoolId
+        UserPoolId: !Ref UserPoolId
+        UserPoolAppClientId: !Ref UserPoolAppClientId
+        RedirectSignInUrl: !Ref RedirectSignInUrl
+        RedirectSignOutUrl: !Ref RedirectSignOutUrl
+
+  SruLastPublication:  # nva-alma-proxy
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/SruLastPublication
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: alma
+        AlmaSruHost: !Ref AlmaSruHost
+
+
+  NvaDoiTransformer: # nva-doi-transformer
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
+        SemanticVersion: 0.1.1
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: doi-transform
+
+  ResourceApi: # nva-resource-api
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/ResourceApi
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: resource
+        # Reference to table containing resource data - refer to template?
+        ResourceTable: nva_resources
+
+  UploadMultipart: # nva-upload-multipart
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/UploadMultipart
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: upload
+        S3UploadBucket: nva-storage-test # S3 Bucket to upload files to  - refer to template?
+
+  PersonData: # nva-bare-proxy
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PersonData
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: person
+        BareApiKey: !Ref BareApiKey
+        BareHost: !Ref BareHost
+
+  NvaPublicationApi:  # nva-publication-api
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaPublicationApi
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: publication
+        PublicationsTableName: 'nva_resources'
+        PublicationsByOwnerIndexName: 'ByPublisher'
+
+    PublicationChannelRegister: # nva-channel-registry
+      Type: AWS::Serverless::Application
+      Properties:
+        Location:
+          ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PublicationChannelRegister
+          SemanticVersion: 0.1.0
+        Parameters:
+          CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+          CustomDomain: !Ref BackendDomain
+          CustomDomainBasePath: publication-channel
+
+  nvafetchdoi: # nva-fetch-doi
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/nva-fetch-doi
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: doi-fetch
+
+  Projects: # nva-cristin-projects
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/Projects
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: project
+
+  NVADOIProxy: # nva-doi-lambda
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/DoiProxy
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: doi
