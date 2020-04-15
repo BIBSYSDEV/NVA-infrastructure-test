@@ -39,17 +39,16 @@ Resources:
         CustomDomainBasePath: alma
         AlmaSruHost: !Ref AlmaSruHost
 
-
-  #  NvaDoiTransformer: # nva-doi-transformer
-  #    Type: AWS::Serverless::Application
-  #    Properties:
-  #      Location:
-  #        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
-  #        SemanticVersion: X.X.X
-  #      Parameters:
-  #        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-  #        CustomDomain: !Ref BackendDomain
-  #        CustomDomainBasePath: doi-transform
+  NvaDoiTransformer: # nva-doi-transformer
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
+        SemanticVersion: 0.1.1
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: doi-transform
 
   ResourceApi: # nva-resource-api
     Type: AWS::Serverless::Application
@@ -89,7 +88,6 @@ Resources:
         BareApiKey: !Ref BareApiKey
         BareHost: !Ref BareHost
 
-
   NvaPublicationApi:  # nva-publication-api
     Type: AWS::Serverless::Application
     Properties:
@@ -103,27 +101,16 @@ Resources:
         PublicationsTableName: 'nva_resources'
         PublicationsByOwnerIndexName: 'ByPublisher'
 
-  #  PublicationChannelRegister: # nva-channel-registry
-  #    Type: AWS::Serverless::Application
-  #    Properties:
-  #      Location:
-  #        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PublicationChannelRegister
-  #        SemanticVersion: X.X.X
-  #      Parameters:
-  #        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-  #        CustomDomain: !Ref BackendDomain
-  #        CustomDomainBasePath: publication-channel
-
-  #  Institutions: # nva-cristin-institutions
-  #    Type: AWS::Serverless::Application
-  #    Properties:
-  #      Location:
-  #        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/Institutions
-  #        SemanticVersion: X.X.X
-  #      Parameters:
-  #        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-  #        CustomDomain: !Ref BackendDomain
-  #        CustomDomainBasePath: institution
+    PublicationChannelRegister: # nva-channel-registry
+      Type: AWS::Serverless::Application
+      Properties:
+        Location:
+          ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PublicationChannelRegister
+          SemanticVersion: 0.1.0
+        Parameters:
+          CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+          CustomDomain: !Ref BackendDomain
+          CustomDomainBasePath: publication-channel
 
   nvafetchdoi: # nva-fetch-doi
     Type: AWS::Serverless::Application
