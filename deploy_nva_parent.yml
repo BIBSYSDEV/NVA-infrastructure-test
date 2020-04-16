@@ -29,7 +29,7 @@ Parameters:
     Default: frontend.test.nva.aws.unit.no
   RedirectSignInUrl:
     Type: String
-    Default: https://frontend.test.nva.aws.unit.no/login
+    Default: https://frontend.test.nva.aws.unit.no
   RedirectSignOutUrl:
     Type: String
     Default: https://frontend.test.nva.aws.unit.no/logout
