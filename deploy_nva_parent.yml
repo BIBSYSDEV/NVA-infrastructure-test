@@ -75,6 +75,11 @@ Resources:
 #  S3 Storage
 # ===============================
 
+  NVAStorage:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/template_s3_storage.yml"
+
 # ===============================
 #  Frontend
 # ===============================
