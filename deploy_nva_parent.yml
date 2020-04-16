@@ -9,13 +9,6 @@ Parameters:
     Description: ARN  of certificate to assign to the assosiated Domain
     Default: arn:aws:acm:us-east-1:812481234721:certificate/9319e9f9-3a66-43bb-9f9c-7fc1e6b4d3ab
 
-  RedirectSignInUrl:
-    Type: String
-    Default: https://frontend.test.nva.aws.unit.no
-  RedirectSignOutUrl:
-    Type: String
-    Default: https://frontend.test.nva.aws.unit.no/logout
-
   BareApiKey:
     Type: String
     Description: Key to access bare
@@ -59,6 +52,12 @@ Resources:
 #  Domene
 # ===============================
 
+  NVADomain:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/template_domain.yml"
+
+
 # ===============================
 #  Cognito
 # ===============================
@@ -96,8 +95,10 @@ Resources:
         CognitoIdentityPoolId: !ImportValue CognitoIdentityPoolId
         UserPoolId: !ImportValue CognitoUserPoolId
         UserPoolAppClientId: !ImportValue CognitoUserPoolAppClientId
-        RedirectSignInUrl: !Ref RedirectSignInUrl
-        RedirectSignOutUrl: !Ref RedirectSignOutUrl
+        RedirectSignInUrl: !ImportValue FrontendDomain
+        RedirectSignOutUrl: !Sub
+          - ${FrontendDomainBasePath}/logout
+          - FrontendDomainBasePath: !ImportValue FrontendDomain
         OrcidBaseUrl: !Ref OrcidBaseUrl
         OrcidClientID: !Ref OrcidClientID
         OrcidClientSecret: !Ref OrcidClientSecret
