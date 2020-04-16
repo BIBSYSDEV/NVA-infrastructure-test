@@ -7,35 +7,64 @@ Description: Setup an hostedzone/domain
 Parameters:
 
 
-  CustomDomain:
+  DomainCerificate:
     Type: String
-    Description: What is the custom-domain
-    Default: api.test.nva.aws.unit.no
+    Description: ARN of certificate to cover domains
 
 
 Resources:
 
-  HostedZoneCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: String
-      DomainValidationOptions:
-        - DomainValidationOption
-      SubjectAlternativeNames:
-        - String
-      Tags:
-        - Tag
-      ValidationMethod: String
+#  HostedZoneCertificate:
+#    Type: AWS::CertificateManager::Certificate
+#    Properties:
+#      DomainName: String
+#      DomainValidationOptions:
+#        - DomainValidationOption
+#      SubjectAlternativeNames:
+#        - String
+#      Tags:
+#        - Tag
+#      ValidationMethod: String
+#
+#  HostedZone:
+#    Type: AWS::Route53::HostedZone
+#    Properties:
+#      HostedZoneConfig:
+#        HostedZoneConfig
+#      HostedZoneTags:
+#        - HostedZoneTag
+#      Name: String
+#      QueryLoggingConfig:
+#        QueryLoggingConfig
+#      VPCs:
+#        - VPC
 
-  HostedZone:
-    Type: AWS::Route53::HostedZone
+  FrontendDomain:
+    Type: AWS::ApiGateway::DomainName
     Properties:
-      HostedZoneConfig:
-        HostedZoneConfig
-      HostedZoneTags:
-        - HostedZoneTag
-      Name: String
-      QueryLoggingConfig:
-        QueryLoggingConfig
-      VPCs:
-        - VPC
+      CertificateArn: !Ref DomainCerificate
+      DomainName: 'frontend'
+
+  AuthDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      CertificateArn: !Ref DomainCerificate
+      DomainName: 'auth'
+
+  BackendApiDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      CertificateArn: !Ref DomainCerificate
+      DomainName: 'api'
+
+Outputs:
+  FrontendDomain:
+    Description: Domain assigned to the frontend
+    Value: !Ref FrontendDomain
+  AuthDomain:
+    Description: Domain assigned the Cognito login
+    Value: !Ref AuthDomain
+  BackendApiDomain:
+    Description: Domain assigned to the backend API
+    Value: !Ref BackendApiDomain
+
