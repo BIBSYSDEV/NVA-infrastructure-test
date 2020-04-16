@@ -3,11 +3,9 @@ Transform: AWS::Serverless-2016-10-31
 
 Description: Setup an hostedzone/domain
 
-
 Parameters:
 
-
-  DomainCerificate:
+  DomainCertificate:
     Type: String
     Description: ARN of certificate to cover domains
 
@@ -42,19 +40,19 @@ Resources:
   FrontendDomain:
     Type: AWS::ApiGateway::DomainName
     Properties:
-      CertificateArn: !Ref DomainCerificate
+      CertificateArn: !Ref DomainCertificate
       DomainName: 'frontend'
 
   AuthDomain:
     Type: AWS::ApiGateway::DomainName
     Properties:
-      CertificateArn: !Ref DomainCerificate
+      CertificateArn: !Ref DomainCertificate
       DomainName: 'auth'
 
   BackendApiDomain:
     Type: AWS::ApiGateway::DomainName
     Properties:
-      CertificateArn: !Ref DomainCerificate
+      CertificateArn: !Ref DomainCertificate
       DomainName: 'api'
 
 Outputs:

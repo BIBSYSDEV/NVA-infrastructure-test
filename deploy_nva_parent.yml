@@ -9,6 +9,13 @@ Parameters:
     Description: ARN  of certificate to assign to the assosiated Domain
     Default: arn:aws:acm:us-east-1:812481234721:certificate/9319e9f9-3a66-43bb-9f9c-7fc1e6b4d3ab
 
+  DomainBasePart:
+    Type: String
+    Description: |
+      Base part of the domain the stack and components will be deployed to. Must be covered by the certificate.
+      Could be somethoing like .test.aws.unit.no or np-733.test.aws.no.
+      Used to calculate the other addresses in the deployment
+
   BareApiKey:
     Type: String
     Description: Key to access bare
@@ -48,9 +55,9 @@ Parameters:
 
 Resources:
 
-# ===============================
-#  Domene
-# ===============================
+  # ===============================
+  #  Domene
+  # ===============================
 
   NVADomain:
     Type: AWS::CloudFormation::Stack
@@ -58,31 +65,31 @@ Resources:
       TemplateURL: "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/template_domain.yml"
 
 
-# ===============================
-#  Cognito
-# ===============================
+  # ===============================
+  #  Cognito
+  # ===============================
 
   NVACognito:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/template_cognito.yml"
 
-# ===============================
-#  DynamoDB
-# ===============================
+  # ===============================
+  #  DynamoDB
+  # ===============================
 
-# ===============================
-#  S3 Storage
-# ===============================
+  # ===============================
+  #  S3 Storage
+  # ===============================
 
   NVAStorage:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/template_s3_storage.yml"
 
-# ===============================
-#  Frontend
-# ===============================
+  # ===============================
+  #  Frontend
+  # ===============================
 
   NVAFrontend:
     Type: AWS::Serverless::Application
@@ -109,9 +116,9 @@ Resources:
         OrcidClientSecret: !Ref OrcidClientSecret
         OrcidRedirectUri: !Ref OrcidRedirectUri
 
-# ===============================
-#  API / Backend
-# ===============================
+  # ===============================
+  #  API / Backend
+  # ===============================
   BackendLambdas:
     Type: AWS::CloudFormation::Stack
     Properties:
