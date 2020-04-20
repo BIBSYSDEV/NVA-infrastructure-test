@@ -14,7 +14,7 @@ Parameters:
   AuthenticationDomain:
     Type: String
     AllowedPattern: ^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$
-    Default: 'nva-test'
+    Default: 'auth'
     Description: The domain name for the domain that hosts the sign-up and sign-in pages for your application.
 
   FeideMetadataURL:
@@ -34,7 +34,7 @@ Parameters:
 
 Resources:
 
-  TriggerExecutionRole:
+  ExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -71,7 +71,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: python3.7
-      Role: !GetAtt TriggerExecutionRole.Arn
+      Role: !GetAtt ExecutionRole.Arn
       Code:
         ZipFile: |
           import json
@@ -133,7 +133,7 @@ Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-#      UserPoolName: NVA-UserPool-test    #Not reqiured
+      UserPoolName: NVA-UserPool-test
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
       UsernameAttributes: [email]
@@ -212,7 +212,7 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref UserPool
-      Domain: !Ref AuthenticationDomain
+      Domain: !Ref CognitoDomain
 
   UserPoolIdentityProviderFeide:
     Type: AWS::Cognito::UserPoolIdentityProvider
@@ -368,7 +368,7 @@ Resources:
   FeideAuthenticatedGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
-#      GroupName: FeideAuthenticatedGroup   #Not reqiured
+      GroupName: FeideAuthenticatedGroup
       Description: Common users authenticated with Feide
       RoleArn: !GetAtt FeideAuthenticatedRole.Arn
       UserPoolId: !Ref UserPool
@@ -376,56 +376,56 @@ Resources:
   PublisherGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
-#      GroupName: PublisherGroup #Not reqiured
+      GroupName: PublisherGroup
       Description: Users allowed to publish
       RoleArn: !GetAtt PublisherRole.Arn
       UserPoolId: !Ref UserPool
 
 
-#  CognitoAuthorizerArnProperty:
-#    Type: AWS::SSM::Parameter
-#    Properties:
-#      Description: ARN for the cognito userpool used to authorize users
-#      Name: CognitoAuthorizerArn
-#      Tier: Standard
-#      Type: String
-#      Value: !GetAtt UserPool.Arn
-#
-#  CognitoIdentityPoolIdProperty:
-#    Type: AWS::SSM::Parameter
-#    Properties:
-#      Description: Identifier of the IdentityPool assosiated with the UserPool
-#      Name: REACT_APP_AWS_COGNITO_IDENTITY_POOL_ID
-#      Tier: Standard
-#      Type: String
-#      Value: !Ref IdentityPool
-#
-#  CognitoUserPoolIdProperty:
-#    Type: AWS::SSM::Parameter
-#    Properties:
-#      Description: Identifier of the UserPool
-#      Name: REACT_APP_AWS_USER_POOLS_ID
-#      Tier: Standard
-#      Type: String
-#      Value: !Ref UserPool
-#
-#  CognitoUserPoolAppClientIdProperty:
-#    Type: AWS::SSM::Parameter
-#    Properties:
-#      Description: Identifier to use for the app clients to access this user pool
-#      Name: REACT_APP_AWS_USER_POOLS_WEB_CLIENT_ID
-#      Tier: Standard
-#      Type: String
-#      Value: !Ref UserPoolClient
-#
-#  CognitoDomainProperty:
-#    Type: AWS::SSM::Parameter
-#    Properties:
-#      Description: Address of Cognito login endpoint
-#      Name: REACT_APP_DOMAIN
-#      Tier: Standard
-#      Type: String
-#      Value: !Ref CognitoDomain
+  CognitoAuthorizerArnProperty:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: ARN for the cognito userpool used to authorize users
+      Name: CognitoAuthorizerArn
+      Tier: Standard
+      Type: String
+      Value: !GetAtt UserPool.Arn
+
+  CognitoIdentityPoolIdProperty:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Identifier of the IdentityPool assosiated with the UserPool
+      Name: REACT_APP_AWS_COGNITO_IDENTITY_POOL_ID
+      Tier: Standard
+      Type: String
+      Value: !Ref IdentityPool
+
+  CognitoUserPoolIdProperty:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Identifier of the UserPool
+      Name: REACT_APP_AWS_USER_POOLS_ID
+      Tier: Standard
+      Type: String
+      Value: !Ref UserPool
+
+  CognitoUserPoolAppClientIdProperty:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Identifier to use for the app clients to access this user pool
+      Name: REACT_APP_AWS_USER_POOLS_WEB_CLIENT_ID
+      Tier: Standard
+      Type: String
+      Value: !Ref UserPoolClient
+
+  CognitoDomainProperty:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Address of Cognito login endpoint
+      Name: REACT_APP_DOMAIN
+      Tier: Standard
+      Type: String
+      Value: !Ref CognitoDomain
 
 
 Outputs:
