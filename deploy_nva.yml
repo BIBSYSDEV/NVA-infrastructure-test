@@ -522,6 +522,8 @@ Resources:
   # ===============================
   #  API / Backend
   # ===============================
+
+
 #  BackendLambdas:
 #    Type: AWS::CloudFormation::Stack
 #    Properties:
@@ -541,7 +543,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/SruLastPublication
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !Ref UserPool
+        CognitoAuthorizerArn: !GetAtt UserPool.Arn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: alma
         AlmaSruHost: !Ref AlmaSruHost
@@ -553,7 +555,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
         SemanticVersion: 0.1.1
       Parameters:
-        CognitoAuthorizerArn: !Ref UserPool
+        CognitoAuthorizerArn: !GetAtt UserPool.Arn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: doi-transform
 
@@ -564,7 +566,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/ResourceApi
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !Ref UserPool
+        CognitoAuthorizerArn: !GetAtt UserPool.Arn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: resource
         # Reference to table containing resource data - refer to template?
@@ -577,7 +579,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/UploadMultipart
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !Ref UserPool
+        CognitoAuthorizerArn: !GetAtt UserPool.Arn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: upload
         S3UploadBucket: !Ref NVAStorageBucket #  nva-storage-test # S3 Bucket to upload files to  - refer to template?
@@ -589,7 +591,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PersonData
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !Ref UserPool
+        CognitoAuthorizerArn: !GetAtt UserPool.Arn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: person
         BareApiKey: !Ref BareApiKey
@@ -602,7 +604,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaPublicationApi
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !Ref UserPool
+        CognitoAuthorizerArn: !GetAtt UserPool.Arn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: publication
         PublicationsTableName: 'nva_resources'
@@ -615,7 +617,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PublicationChannelRegister
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !Ref UserPool
+        CognitoAuthorizerArn: !GetAtt UserPool.Arn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: publication-channel
 
@@ -626,7 +628,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/nva-fetch-doi
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !Ref UserPool
+        CognitoAuthorizerArn: !GetAtt UserPool.Arn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: doi-fetch
 
@@ -637,7 +639,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/Projects
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !Ref UserPool
+        CognitoAuthorizerArn: !GetAtt UserPool.Arn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: project
 
@@ -648,7 +650,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/DoiProxy
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !Ref UserPool
+        CognitoAuthorizerArn: !GetAtt UserPool.Arn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: doi
 
@@ -660,4 +662,4 @@ Outputs:
 #    Value: !Ref AuthenticationDomain
   CognitoUserPoolId:
     Description: Identifier of the UserPool in Cognito
-    Value: !Ref UserPool
+    Value: !GetAtt UserPool.Arn
