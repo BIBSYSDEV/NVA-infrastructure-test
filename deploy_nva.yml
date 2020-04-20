@@ -16,6 +16,7 @@ Parameters:
       Base part of the domain the stack and components will be deployed to. Must be covered by the certificate.
       Could be somethoing like .test.aws.unit.no or np-733.test.aws.no.
       Used to calculate the other addresses in the deployment
+    Default: .sandbox.nva.aws.unit.no
 
   FeideMetadataURL:
     Type: String
@@ -62,19 +63,19 @@ Resources:
   #  Domene
   # ===============================
 
-  FrontendDomain:
-    Type: AWS::ApiGateway::DomainName
-    Properties:
-      CertificateArn: !Ref DomainCertificateArn
-      DomainName: !Sub 'frontend${DomainBasePart}'
+#  FrontendDomain:
+#    Type: AWS::ApiGateway::DomainName
+#    Properties:
+#      CertificateArn: !Ref DomainCertificateArn
+#      DomainName: !Sub 'frontend${DomainBasePart}'
+#
+#  AuthenticationDomain:
+#    Type: AWS::ApiGateway::DomainName
+#    Properties:
+#      CertificateArn: !Ref DomainCertificateArn
+#      DomainName: !Sub 'auth${DomainBasePart}'
 
-  AuthenticationDomain:
-    Type: AWS::ApiGateway::DomainName
-    Properties:
-      CertificateArn: !Ref DomainCertificateArn
-      DomainName: !Sub 'auth${DomainBasePart}'
-
-  BackendApiDomain:
+  BackendDomain:
     Type: AWS::ApiGateway::DomainName
     Properties:
       CertificateArn: !Ref DomainCertificateArn
@@ -263,7 +264,12 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref UserPool
-      Domain: !Ref AuthenticationDomain
+      Domain: auth-np151-sandbox
+#      Domain: !Ref AuthenticationDomain.DomainName
+#      Domain: !Sub 'auth${DomainBasePart}'
+#      CustomDomainConfig:
+#        CertificateArn: !Ref DomainCertificateArn
+
 
   UserPoolIdentityProviderFeide:
     Type: AWS::Cognito::UserPoolIdentityProvider
@@ -284,7 +290,7 @@ Resources:
         email: mail
         family_name: sn
       UserPoolId: !Ref UserPool
-      ProviderName: !Sub '${AWS::StackName}-FeideIdP'
+      ProviderName: FeideIdProvider  # !Sub '${AWS::StackName}-FeideIdP'
       ProviderType: SAML
       ProviderDetails:
         MetadataURL: !Ref FeideMetadataURL
@@ -298,11 +304,10 @@ Resources:
       UserPoolId: !Ref UserPool
       CallbackURLs:
         -
-          !Ref FrontendDomain
+          !Sub 'https://frontend${DomainBasePart}'
       LogoutURLs:
-        - !Sub
-          - ${FrontendDomainBasePath}/logout
-          - FrontendDomainBasePath: !Ref FrontendDomain
+        -
+          !Sub 'https://frontend${DomainBasePart}/logout'
       AllowedOAuthFlowsUserPoolClient: True
       AllowedOAuthFlows:
         - code
@@ -481,8 +486,8 @@ Resources:
               - "s3:ListBucketMultipartUploads"
             Effect: "Allow"
             Resource:
-              - arn:aws:s3:::nva-storage-test
-              - arn:aws:s3:::nva-storage-test/*
+              - !Sub 'arn:aws:s3:::${NVAStorageBucket}'
+              - !Sub 'arn:aws:s3:::${NVAStorageBucket}/*'
             Principal:
               Service:
                 - lambda.amazonaws.com
@@ -500,35 +505,159 @@ Resources:
         SemanticVersion: 1.1.2
       Parameters:
         AlmaApiUrl: !Ref AlmaApiUrl
-        AmazonCognitoDomain: !Ref AuthenticationDomain
-        FrontendDomain: !Ref FrontendDomain
-        BackendDomain: !Ref BackendApiDomain
+        AmazonCognitoDomain: !Ref UserPoolDomain
+        FrontendDomain: !Sub 'frontend${DomainBasePart}'
+        BackendDomain: !Ref BackendDomain
         DomainCertificateArn: !Ref DomainCertificateArn
         CognitoIdentityPoolId: !Ref IdentityPool
         UserPoolId: !Ref UserPool
         UserPoolAppClientId: !Ref UserPoolClient
-        RedirectSignInUrl: !Ref FrontendDomain
-        RedirectSignOutUrl: !Sub
-          - ${FrontendDomainBasePath}/logout
-          - FrontendDomainBasePath: !Ref FrontendDomain
+        RedirectSignInUrl: !Sub 'frontend${DomainBasePart}'
+        RedirectSignOutUrl: !Sub 'frontend${DomainBasePart}/logout'
         OrcidBaseUrl: !Ref OrcidBaseUrl
         OrcidClientID: !Ref OrcidClientID
         OrcidClientSecret: !Ref OrcidClientSecret
-        OrcidRedirectUri: !Sub
-          - ${FrontendDomainBasePath}/user
-          - FrontendDomainBasePath: !Ref FrontendDomain
+        OrcidRedirectUri: !Sub 'frontend${DomainBasePart}'
 
   # ===============================
   #  API / Backend
   # ===============================
-  BackendLambdas:
-    Type: AWS::CloudFormation::Stack
+#  BackendLambdas:
+#    Type: AWS::CloudFormation::Stack
+#    Properties:
+#      TemplateURL: "https://nva-infrastructure-sandbox.s3-eu-west-1.amazonaws.com/deploy_backend.yml"
+#      Parameters:
+#        CognitoAuthorizerArn: !Ref UserPool
+#        BackendDomain: !Ref BackendDomain
+#        StorageBucket: !Ref NVAStorageBucket
+#        BareApiKey: !Ref BareApiKey
+#        BareHost: !Ref BareHost
+#        AlmaSruHost: !Ref AlmaSruHost
+
+  SruLastPublication:  # nva-alma-proxy
+    Type: AWS::Serverless::Application
     Properties:
-      TemplateURL: "https://nva-infrastructure-sandbox.s3-eu-west-1.amazonaws.com/deploy_backend.yml"
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/SruLastPublication
+        SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !Ref UserPool
-        BackendDomain: !Ref BackendApiDomain
-        BareApiKey: !Ref BareApiKey
-        BareHost: !Ref BareHost
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: alma
         AlmaSruHost: !Ref AlmaSruHost
 
+  NvaDoiTransformer: # nva-doi-transformer
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
+        SemanticVersion: 0.1.1
+      Parameters:
+        CognitoAuthorizerArn: !Ref UserPool
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: doi-transform
+
+  ResourceApi: # nva-resource-api
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/ResourceApi
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref UserPool
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: resource
+        # Reference to table containing resource data - refer to template?
+        ResourceTable: nva_resources
+
+  UploadMultipart: # nva-upload-multipart
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/UploadMultipart
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref UserPool
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: upload
+        S3UploadBucket: !Ref NVAStorageBucket #  nva-storage-test # S3 Bucket to upload files to  - refer to template?
+
+  PersonData: # nva-bare-proxy
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PersonData
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref UserPool
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: person
+        BareApiKey: !Ref BareApiKey
+        BareHost: !Ref BareHost
+
+  NvaPublicationApi:  # nva-publication-api
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaPublicationApi
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref UserPool
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: publication
+        PublicationsTableName: 'nva_resources'
+        PublicationsByOwnerIndexName: 'ByPublisher'
+
+  PublicationChannelRegister: # nva-channel-registry
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PublicationChannelRegister
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref UserPool
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: publication-channel
+
+  nvafetchdoi: # nva-fetch-doi
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/nva-fetch-doi
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref UserPool
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: doi-fetch
+
+  Projects: # nva-cristin-projects
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/Projects
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref UserPool
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: project
+
+  NVADOIProxy: # nva-doi-lambda
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/DoiProxy
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref UserPool
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: doi
+
+
+
+Outputs:
+#  CognitoAuthenticationDomain:
+#    Description: url for the cognito authorizer
+#    Value: !Ref AuthenticationDomain
+  CognitoUserPoolId:
+    Description: Identifier of the UserPool in Cognito
+    Value: !Ref UserPool
