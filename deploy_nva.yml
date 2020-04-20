@@ -1,38 +1,88 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Description: CloudFormation parent template for setting up Cognito for Feide login
-#
-#  After Cognito has been created it must be registered with Feide
-#  The user pools service provider URN is: urn:amazon:cognito:sp:<user_pool_id>
-#
-#  Information needed is:
-#
-#    Amazon Cognito Domain:  https://nva-test.auth.eu-west-1.amazoncognito.com
-#    Amazon Cognito URN:     urn:amazon:cognito:sp:eu-west-1_JRPabH2jf
-#
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: v1.0 Complete deployment of NVA
+
 Parameters:
 
-  AuthenticationDomain:
+  DomainCertificateArn:
     Type: String
-    AllowedPattern: ^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$
-    Default: 'nva-test'
-    Description: The domain name for the domain that hosts the sign-up and sign-in pages for your application.
+    Description: ARN  of certificate to assign to the assosiated Domain
+    Default: arn:aws:acm:us-east-1:812481234721:certificate/9319e9f9-3a66-43bb-9f9c-7fc1e6b4d3ab
+
+  DomainBasePart:
+    Type: String
+    Description: |
+      Base part of the domain the stack and components will be deployed to. Must be covered by the certificate.
+      Could be somethoing like .test.aws.unit.no or np-733.test.aws.no.
+      Used to calculate the other addresses in the deployment
 
   FeideMetadataURL:
     Type: String
     Default:  https://idp-test.feide.no/simplesaml/saml2/idp/metadata.php
     Description: Link to the the identity provider details.
 
-  UserPoolClientCallbackURLs:
-    Type: List<String>
-    Default: 'https://frontend.test.nva.aws.unit.no'
-    Description: A list of allowed redirect (callback) URLs for the identity providers.
 
-  UserPoolClientLogoutURLs:
-    Type: List<String>
-    Default: 'https://frontend.test.nva.aws.unit.no/logout'
-    Description: A list of allowed logout URLs for the identity providers.
+  BareApiKey:
+    Type: String
+    Description: Key to access bare
+    NoEcho: true
+    Default: '{{resolve:secretsmanager:bareApiKey:SecretString}}'
+  BareHost:
+    Type: String
+    Description: Address to bare
+    Default: alfa-a.bibsys.no
+  AlmaSruHost:
+    Type: String
+    Description: Address to Alma-SRU
+    Default: bibsys.alma.exlibrisgroup.com/view/sru/47BIBSYS_NETWORK
+  OrcidBaseUrl:
+    Type: String
+    Description: Address to ORCID services
+    Default: https://sandbox.orcid.org
+  OrcidClientID:
+    Type: String
+    Description: Clientid for ORCID
+    Default: APP-QHBJSU99SZV1LMQJ
+  OrcidClientSecret:
+    Type: String
+    Description: Secret to authenticate for ORCID
+    NoEcho: true
+    Default: '{{resolve:secretsmanager:REACT_APP_ORCID_CLIENT_SECRET:SecretString}}'
+  AlmaApiUrl:
+    Type: String
+    Description: URL to ALMA Library services
+    Default: https://bibsys.alma.exlibrisgroup.com/view/sru/47BIBSYS_NETWORK
+
+
 
 Resources:
+
+  # ===============================
+  #  Domene
+  # ===============================
+
+  FrontendDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      CertificateArn: !Ref DomainCertificateArn
+      DomainName: 'frontend'
+
+  AuthenticationDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      CertificateArn: !Ref DomainCertificateArn
+      DomainName: 'auth'
+
+  BackendApiDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      CertificateArn: !Ref DomainCertificateArn
+      DomainName: 'api'
+
+  # ===============================
+  #  Cognito
+  # ===============================
+
 
   TriggerExecutionRole:
     Type: AWS::IAM::Role
@@ -133,7 +183,7 @@ Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-#      UserPoolName: NVA-UserPool-test    #Not reqiured
+      #      UserPoolName: NVA-UserPool-test    #Not reqiured
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
       UsernameAttributes: [email]
@@ -368,7 +418,7 @@ Resources:
   FeideAuthenticatedGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
-#      GroupName: FeideAuthenticatedGroup   #Not reqiured
+      #      GroupName: FeideAuthenticatedGroup   #Not reqiured
       Description: Common users authenticated with Feide
       RoleArn: !GetAtt FeideAuthenticatedRole.Arn
       UserPoolId: !Ref UserPool
@@ -376,65 +426,103 @@ Resources:
   PublisherGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
-#      GroupName: PublisherGroup #Not reqiured
+      #      GroupName: PublisherGroup #Not reqiured
       Description: Users allowed to publish
       RoleArn: !GetAtt PublisherRole.Arn
       UserPoolId: !Ref UserPool
 
 
-#  CognitoAuthorizerArnProperty:
-#    Type: AWS::SSM::Parameter
-#    Properties:
-#      Description: ARN for the cognito userpool used to authorize users
-#      Name: CognitoAuthorizerArn
-#      Tier: Standard
-#      Type: String
-#      Value: !GetAtt UserPool.Arn
-#
-#  CognitoIdentityPoolIdProperty:
-#    Type: AWS::SSM::Parameter
-#    Properties:
-#      Description: Identifier of the IdentityPool assosiated with the UserPool
-#      Name: REACT_APP_AWS_COGNITO_IDENTITY_POOL_ID
-#      Tier: Standard
-#      Type: String
-#      Value: !Ref IdentityPool
-#
-#  CognitoUserPoolIdProperty:
-#    Type: AWS::SSM::Parameter
-#    Properties:
-#      Description: Identifier of the UserPool
-#      Name: REACT_APP_AWS_USER_POOLS_ID
-#      Tier: Standard
-#      Type: String
-#      Value: !Ref UserPool
-#
-#  CognitoUserPoolAppClientIdProperty:
-#    Type: AWS::SSM::Parameter
-#    Properties:
-#      Description: Identifier to use for the app clients to access this user pool
-#      Name: REACT_APP_AWS_USER_POOLS_WEB_CLIENT_ID
-#      Tier: Standard
-#      Type: String
-#      Value: !Ref UserPoolClient
-#
-#  CognitoDomainProperty:
-#    Type: AWS::SSM::Parameter
-#    Properties:
-#      Description: Address of Cognito login endpoint
-#      Name: REACT_APP_DOMAIN
-#      Tier: Standard
-#      Type: String
-#      Value: !Ref CognitoDomain
+  # ===============================
+  #  DynamoDB
+  # ===============================
+
+  # ===============================
+  #  S3 Storage
+  # ===============================
 
 
-Outputs:
-  CognitoIdentityPoolId:
-    Description: Identifier of the IdentityPool assosiated with the UserPool
-    Value: !Ref IdentityPool
-  CognitoUserPoolId:
-    Description: Identifier of the UserPool in Cognito
-    Value: !Ref UserPool
-  CognitoUserPoolAppClientId:
-    Description: Identifier to use for the app clients to access this user pool
-    Value: !Ref UserPoolClient
+  NVAStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: nva-storage-test
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, PUT, POST, HEAD]
+            AllowedOrigins: ['*']
+            ExposedHeaders: [ETag]
+      LifecycleConfiguration:
+        Rules:
+          - Id: RemoveFailedUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+      VersioningConfiguration:
+        Status: Enabled
+
+
+  NVAStorageBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref NVAStorageBucket
+      PolicyDocument:
+        Statement:
+          - Action:
+              - "s3:GetObject"
+              - "s3:PutObject"
+              - "s3:AbortMultipartUpload"
+              - "s3:ListMultipartUploadParts"
+              - "s3:ListBucketMultipartUploads"
+            Effect: "Allow"
+            Resource:
+              - arn:aws:s3:::nva-storage-test
+              - arn:aws:s3:::nva-storage-test/*
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+
+  # ===============================
+  #  Frontend
+  # ===============================
+
+  NVAFrontend:
+    Type: AWS::Serverless::Application
+    Description: NVA Frontend
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NVA-Frontend
+        SemanticVersion: 1.1.2
+      Parameters:
+        AlmaApiUrl: !Ref AlmaApiUrl
+        AmazonCognitoDomain: !ImportValue AuthDomain
+        FrontendDomain: !ImportValue FrontendDomain
+        BackendDomain: !ImportValue BackendApiDomain
+        DomainCertificateArn: !Ref DomainCertificateArn
+        CognitoIdentityPoolId: !ImportValue CognitoIdentityPoolId
+        UserPoolId: !ImportValue CognitoUserPoolId
+        UserPoolAppClientId: !ImportValue CognitoUserPoolAppClientId
+        RedirectSignInUrl: !ImportValue FrontendDomain
+        RedirectSignOutUrl: !Sub
+          - ${FrontendDomainBasePath}/logout
+          - FrontendDomainBasePath: !ImportValue FrontendDomain
+        OrcidBaseUrl: !Ref OrcidBaseUrl
+        OrcidClientID: !Ref OrcidClientID
+        OrcidClientSecret: !Ref OrcidClientSecret
+        OrcidRedirectUri: !Sub
+          - ${FrontendDomainBasePath}/user
+          - FrontendDomainBasePath: !ImportValue FrontendDomain
+
+  # ===============================
+  #  API / Backend
+  # ===============================
+  BackendLambdas:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://nva-infrastructure-sandbox.s3-eu-west-1.amazonaws.com/deploy_backend.yml"
+      Parameters:
+        CognitoAuthorizerArn: !ImportValue CognitoUserPoolId
+        BackendDomain: !ImportValue BackendApiDomain
+        BareApiKey: !Ref BareApiKey
+        BareHost: !Ref BareHost
+        AlmaSruHost: !Ref AlmaSruHost
+
