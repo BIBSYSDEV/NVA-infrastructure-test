@@ -499,23 +499,23 @@ Resources:
         SemanticVersion: 1.1.2
       Parameters:
         AlmaApiUrl: !Ref AlmaApiUrl
-        AmazonCognitoDomain: !ImportValue AuthDomain
-        FrontendDomain: !ImportValue FrontendDomain
-        BackendDomain: !ImportValue BackendApiDomain
+        AmazonCognitoDomain: !Ref AuthenticationDomain
+        FrontendDomain: !Ref FrontendDomain
+        BackendDomain: !Ref BackendApiDomain
         DomainCertificateArn: !Ref DomainCertificateArn
-        CognitoIdentityPoolId: !ImportValue CognitoIdentityPoolId
-        UserPoolId: !ImportValue CognitoUserPoolId
-        UserPoolAppClientId: !ImportValue CognitoUserPoolAppClientId
-        RedirectSignInUrl: !ImportValue FrontendDomain
+        CognitoIdentityPoolId: !Ref IdentityPool
+        UserPoolId: !Ref UserPool
+        UserPoolAppClientId: !Ref UserPoolClient
+        RedirectSignInUrl: !Ref FrontendDomain
         RedirectSignOutUrl: !Sub
           - ${FrontendDomainBasePath}/logout
-          - FrontendDomainBasePath: !ImportValue FrontendDomain
+          - FrontendDomainBasePath: !Ref FrontendDomain
         OrcidBaseUrl: !Ref OrcidBaseUrl
         OrcidClientID: !Ref OrcidClientID
         OrcidClientSecret: !Ref OrcidClientSecret
         OrcidRedirectUri: !Sub
           - ${FrontendDomainBasePath}/user
-          - FrontendDomainBasePath: !ImportValue FrontendDomain
+          - FrontendDomainBasePath: !Ref FrontendDomain
 
   # ===============================
   #  API / Backend
@@ -525,8 +525,8 @@ Resources:
     Properties:
       TemplateURL: "https://nva-infrastructure-sandbox.s3-eu-west-1.amazonaws.com/deploy_backend.yml"
       Parameters:
-        CognitoAuthorizerArn: !ImportValue CognitoUserPoolId
-        BackendDomain: !ImportValue BackendApiDomain
+        CognitoAuthorizerArn: !Ref UserPool
+        BackendDomain: !Ref BackendApiDomain
         BareApiKey: !Ref BareApiKey
         BareHost: !Ref BareHost
         AlmaSruHost: !Ref AlmaSruHost
