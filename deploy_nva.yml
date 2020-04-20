@@ -295,8 +295,13 @@ Resources:
       SupportedIdentityProviders:
         - !Ref UserPoolIdentityProviderFeide
       UserPoolId: !Ref UserPool
-      CallbackURLs: !Ref UserPoolClientCallbackURLs
-      LogoutURLs: !Ref UserPoolClientLogoutURLs
+      CallbackURLs:
+        -
+          !Ref FrontendDomain
+      LogoutURLs:
+        - !Sub
+          - ${FrontendDomainBasePath}/logout
+          - FrontendDomainBasePath: !Ref FrontendDomain
       AllowedOAuthFlowsUserPoolClient: True
       AllowedOAuthFlows:
         - code
