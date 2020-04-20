@@ -7,7 +7,8 @@ Parameters:
   DomainCertificateArn:
     Type: String
     Description: ARN  of certificate to assign to the assosiated Domain
-    Default: arn:aws:acm:us-east-1:812481234721:certificate/9319e9f9-3a66-43bb-9f9c-7fc1e6b4d3ab
+#    Default: arn:aws:acm:us-east-1:812481234721:certificate/9319e9f9-3a66-43bb-9f9c-7fc1e6b4d3ab   # Test
+    Default: arn:aws:acm:us-east-1:750639270376:certificate/72355178-f20b-45c9-b036-5a9196f9da9d   # Dev/sandbox
 
   DomainBasePart:
     Type: String
@@ -65,19 +66,19 @@ Resources:
     Type: AWS::ApiGateway::DomainName
     Properties:
       CertificateArn: !Ref DomainCertificateArn
-      DomainName: 'frontend'
+      DomainName: !Sub 'frontend${DomainBasePart}'
 
   AuthenticationDomain:
     Type: AWS::ApiGateway::DomainName
     Properties:
       CertificateArn: !Ref DomainCertificateArn
-      DomainName: 'auth'
+      DomainName: !Sub 'auth${DomainBasePart}'
 
   BackendApiDomain:
     Type: AWS::ApiGateway::DomainName
     Properties:
       CertificateArn: !Ref DomainCertificateArn
-      DomainName: 'api'
+      DomainName: !Sub 'api${DomainBasePart}'
 
   # ===============================
   #  Cognito
@@ -449,7 +450,7 @@ Resources:
   NVAStorageBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: nva-storage-test
+#      BucketName: nva-storage-sandbox  # Not required
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: ['*']
