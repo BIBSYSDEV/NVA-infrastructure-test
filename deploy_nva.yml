@@ -7,8 +7,8 @@ Parameters:
   DomainCertificateArn:
     Type: String
     Description: ARN  of certificate to assign to the assosiated Domain
-#    Default: arn:aws:acm:us-east-1:812481234721:certificate/9319e9f9-3a66-43bb-9f9c-7fc1e6b4d3ab   # Test
-    Default: arn:aws:acm:us-east-1:750639270376:certificate/72355178-f20b-45c9-b036-5a9196f9da9d   # Dev/sandbox
+    Default: arn:aws:acm:us-east-1:812481234721:certificate/9319e9f9-3a66-43bb-9f9c-7fc1e6b4d3ab   # Test
+#    Default: arn:aws:acm:us-east-1:750639270376:certificate/72355178-f20b-45c9-b036-5a9196f9da9d   # Dev/sandbox
 
   ApplicationDomain:
     Type: String
@@ -16,13 +16,7 @@ Parameters:
       Base part of the domain the stack and components will be deployed to. Must be covered by the certificate.
       Could be somethoing like .test.aws.unit.no or np-733.test.aws.no.
       Used to calculate the other addresses in the deployment
-    Default: frontend.sandbox.nva.aws.unit.no
-#
-#  FeideMetadataURL:
-#    Type: String
-#    Default:  https://idp-test.feide.no/simplesaml/saml2/idp/metadata.php
-#    Description: Link to the the identity provider details.
-
+    Default: frontend.test.nva.aws.unit.no
 
   BareApiKey:
     Type: String
@@ -58,17 +52,6 @@ Parameters:
 
 
 Resources:
-
-  # ===============================
-  #  Domene
-  # ===============================
-
-  BackendDomain:
-    Type: AWS::ApiGateway::DomainName
-    Properties:
-      CertificateArn: !Ref DomainCertificateArn
-      DomainName: api.test.nva.aws.unit.no
-
 
 
   # ===============================
@@ -135,7 +118,7 @@ Resources:
         AlmaApiUrl: !Ref AlmaApiUrl
         AmazonCognitoDomain: !ImportValue CognitoLoginUrl
         FrontendDomain: !Ref ApplicationDomain
-        BackendDomain: !Ref BackendDomain
+        BackendDomain: !ImportValue BackendCustomDomain
         DomainCertificateArn: !Ref DomainCertificateArn
         CognitoIdentityPoolId: ImportValue !Ref IdentityPool
         UserPoolId: !ImportValue CognitoUserPoolId
@@ -159,7 +142,7 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
+        CustomDomain: !ImportValue BackendCustomDomain
         CustomDomainBasePath: alma
         AlmaSruHost: !Ref AlmaSruHost
 
@@ -171,7 +154,7 @@ Resources:
         SemanticVersion: 0.1.1
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
+        CustomDomain: !ImportValue BackendCustomDomain
         CustomDomainBasePath: doi-transform
 
   ResourceApi: # nva-resource-api
@@ -182,7 +165,7 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
+        CustomDomain: !ImportValue BackendCustomDomain
         CustomDomainBasePath: resource
         # Reference to table containing resource data - refer to template?
         ResourceTable: nva_resources
@@ -195,7 +178,7 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
+        CustomDomain: !ImportValue BackendCustomDomain
         CustomDomainBasePath: upload
         S3UploadBucket: !Ref NVAStorageBucket #  nva-storage-test # S3 Bucket to upload files to  - refer to template?
 
@@ -207,7 +190,7 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
+        CustomDomain: !ImportValue BackendCustomDomain
         CustomDomainBasePath: person
         BareApiKey: !Ref BareApiKey
         BareHost: !Ref BareHost
@@ -220,7 +203,7 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
+        CustomDomain: !ImportValue BackendCustomDomain
         CustomDomainBasePath: publication
         PublicationsTableName: 'nva_resources'
         PublicationsByOwnerIndexName: 'ByPublisher'
@@ -233,7 +216,7 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
+        CustomDomain: !ImportValue BackendCustomDomain
         CustomDomainBasePath: publication-channel
 
   nvafetchdoi: # nva-fetch-doi
@@ -244,7 +227,7 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
+        CustomDomain: !ImportValue BackendCustomDomain
         CustomDomainBasePath: doi-fetch
 
   Projects: # nva-cristin-projects
@@ -255,7 +238,7 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
+        CustomDomain: !ImportValue BackendCustomDomain
         CustomDomainBasePath: project
 
   NVADOIProxy: # nva-doi-lambda
@@ -266,6 +249,6 @@ Resources:
         SemanticVersion: 0.1.0
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
-        CustomDomain: !Ref BackendDomain
+        CustomDomain: !ImportValue BackendCustomDomain
         CustomDomainBasePath: doi
 

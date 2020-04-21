@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: Setup custom domain for API-Gateway
+
+Parameters:
+
+  CustomDomainCertificate:
+    Type: String
+    Description: ARN  of certificate to assign to custom-domain
+    Default: arn:aws:acm:us-east-1:812481234721:certificate/9319e9f9-3a66-43bb-9f9c-7fc1e6b4d3ab
+
+  CustomDomainName:
+    Type: String
+    Description: What is the custom-domain
+    Default: api.test.nva.aws.unit.no
+
+
+Resources:
+
+# ======================================================================================================
+#  Setup Custom Domain Name to allow for mapping from path to api-gateway
+#
+#  https://api.nva.aws.unit.no/echo ->   https://612pxxxxzjwk.execute-api.eu-west-1.amazonaws.com/Prod
+#
+# ======================================================================================================
+  CustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      CertificateArn: !Ref CustomDomainCertificate
+      DomainName: !Ref CustomDomainName
+
+Outputs:
+  BackendCustomDomain:
+    Description: URL of backend API
+    Value: !Ref  CustomDomain
+    Export:
+      Name: BackendCustomDomain
