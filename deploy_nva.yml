@@ -10,18 +10,18 @@ Parameters:
 #    Default: arn:aws:acm:us-east-1:812481234721:certificate/9319e9f9-3a66-43bb-9f9c-7fc1e6b4d3ab   # Test
     Default: arn:aws:acm:us-east-1:750639270376:certificate/72355178-f20b-45c9-b036-5a9196f9da9d   # Dev/sandbox
 
-  DomainBasePart:
+  ApplicationDomain:
     Type: String
     Description: |
       Base part of the domain the stack and components will be deployed to. Must be covered by the certificate.
       Could be somethoing like .test.aws.unit.no or np-733.test.aws.no.
       Used to calculate the other addresses in the deployment
-    Default: .sandbox.nva.aws.unit.no
-
-  FeideMetadataURL:
-    Type: String
-    Default:  https://idp-test.feide.no/simplesaml/saml2/idp/metadata.php
-    Description: Link to the the identity provider details.
+    Default: frontend.sandbox.nva.aws.unit.no
+#
+#  FeideMetadataURL:
+#    Type: String
+#    Default:  https://idp-test.feide.no/simplesaml/saml2/idp/metadata.php
+#    Description: Link to the the identity provider details.
 
 
   BareApiKey:
@@ -63,384 +63,12 @@ Resources:
   #  Domene
   # ===============================
 
-#  FrontendDomain:
-#    Type: AWS::ApiGateway::DomainName
-#    Properties:
-#      CertificateArn: !Ref DomainCertificateArn
-#      DomainName: !Sub 'frontend${DomainBasePart}'
-#
-#  AuthenticationDomain:
-#    Type: AWS::ApiGateway::DomainName
-#    Properties:
-#      CertificateArn: !Ref DomainCertificateArn
-#      DomainName: !Sub 'auth${DomainBasePart}'
-
   BackendDomain:
     Type: AWS::ApiGateway::DomainName
     Properties:
       CertificateArn: !Ref DomainCertificateArn
-      DomainName: !Sub 'api${DomainBasePart}'
+      DomainName: api.test.nva.aws.unit.no
 
-  # ===============================
-  #  Cognito
-  # ===============================
-
-
-  TriggerExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: [lambda.amazonaws.com]
-            Action: ['sts:AssumeRole']
-      Path: /
-      Policies:
-        - PolicyName: writeLog
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
-        - PolicyName: AddUserToGroup
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - cognito-idp:AdminAddUserToGroup
-                  - cognito-idp:AdminUpdateUserAttributes
-                Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
-
-  PostAuthenticationTrigger:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: index.handler
-      Runtime: python3.7
-      Role: !GetAtt TriggerExecutionRole.Arn
-      Code:
-        ZipFile: |
-          import json
-
-          import boto3
-
-          client = boto3.client('cognito-idp')
-
-
-          def add_user_attributes(event):
-              affiliation = event.get("request", {}).get("userAttributes", {}).get('custom:affiliation')
-
-              if 'staff' in affiliation:
-                  client.admin_add_user_to_group(
-                      UserPoolId=event['userPoolId'],
-                      Username=event['userName'],
-                      GroupName='PublisherGroup'
-                  )
-
-                  client.admin_update_user_attributes(
-                      UserPoolId=event['userPoolId'],
-                      Username=event['userName'],
-                      UserAttributes=[
-                          {
-                              'Name': 'custom:applicationRoles',
-                              'Value': 'Publisher'
-                          }
-                      ]
-                  )
-
-              client.admin_update_user_attributes(
-                  UserPoolId=event['userPoolId'],
-                  Username=event['userName'],
-                  UserAttributes=[
-                      {'Name': 'custom:application', 'Value': 'NVA'},
-                      {'Name': 'custom:identifiers',
-                       'Value': 'feide:' + event.get("request", {}).get("userAttributes", {}).get('custom:feideId')}
-                  ]
-              )
-
-
-          def handler(event, context):
-              affiliation = event.get("request", {}).get("userAttributes", {}).get('custom:affiliation')
-
-              if affiliation is None:
-                  print(json.dumps(event, default=str))
-                  raise Exception('Missing affiliation attribute')
-
-              add_user_attributes(event)
-              return event
-
-  InvokePostAuthenticationTriggerPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt PostAuthenticationTrigger.Arn
-      Principal: cognito-idp.amazonaws.com
-
-  UserPool:
-    Type: AWS::Cognito::UserPool
-    Properties:
-      #      UserPoolName: NVA-UserPool-test    #Not reqiured
-      AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: true
-      UsernameAttributes: [email]
-      EmailConfiguration:
-        EmailSendingAccount: 'COGNITO_DEFAULT'
-      MfaConfiguration: 'OFF'
-      LambdaConfig:
-        PostAuthentication: !GetAtt PostAuthenticationTrigger.Arn
-      Schema:
-        - Name: affiliation
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: application
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: applicationRoles
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: commonName
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: email
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: feideTargetedId
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: feideId
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: forwardedFor
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: identifiers
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: name
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: orgEmail
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: orgLegalName
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: orgName
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: orgNumber
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: schoolList
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-        - Name: yearOfBirth
-          AttributeDataType: String
-          Mutable: true
-          Required: false
-
-  UserPoolDomain:
-    Type: AWS::Cognito::UserPoolDomain
-    Properties:
-      UserPoolId: !Ref UserPool
-      Domain: auth-np151-sandbox
-#      Domain: !Ref AuthenticationDomain.DomainName
-#      Domain: !Sub 'auth${DomainBasePart}'
-#      CustomDomainConfig:
-#        CertificateArn: !Ref DomainCertificateArn
-
-
-  UserPoolIdentityProviderFeide:
-    Type: AWS::Cognito::UserPoolIdentityProvider
-    Properties:
-      AttributeMapping:
-        custom:affiliation: eduPersonAffiliation
-        custom:commonName: cn
-        custom:feideId: eduPersonPrincipalName
-        custom:feideTargetedId: eduPersonTargetedID
-        custom:orgLegalName: eduPersonOrgDN:eduOrgLegalName
-        name: displayName
-        custom:orgEmail: eduPersonOrgDN:mail
-        custom:orgName: eduPersonOrgDN:o
-        custom:orgNumber: eduPersonOrgDN:norEduOrgNIN
-        custom:schoolList: feideSchoolList
-        custom:yearOfBirth: feideYearOfBirth
-        given_name: givenName
-        email: mail
-        family_name: sn
-      UserPoolId: !Ref UserPool
-      ProviderName: FeideIdProvider  # !Sub '${AWS::StackName}-FeideIdP'
-      ProviderType: SAML
-      ProviderDetails:
-        MetadataURL: !Ref FeideMetadataURL
-
-  UserPoolClient:
-    Type: AWS::Cognito::UserPoolClient
-    Properties:
-      GenerateSecret: false
-      SupportedIdentityProviders:
-        - !Ref UserPoolIdentityProviderFeide
-      UserPoolId: !Ref UserPool
-      CallbackURLs:
-        -
-          !Sub 'https://frontend${DomainBasePart}'
-      LogoutURLs:
-        -
-          !Sub 'https://frontend${DomainBasePart}/logout'
-      AllowedOAuthFlowsUserPoolClient: True
-      AllowedOAuthFlows:
-        - code
-      AllowedOAuthScopes:
-        - openid
-        - aws.cognito.signin.user.admin
-
-  IdentityPool:
-    Type: AWS::Cognito::IdentityPool
-    Properties:
-      AllowUnauthenticatedIdentities: True
-      CognitoIdentityProviders:
-        -
-          ClientId: !Ref UserPoolClient
-          ProviderName: !Sub
-            - cognito-idp.${region}.amazonaws.com/${client}
-            - { region: !Ref "AWS::Region", client: !Ref UserPool}
-
-  # IAM role used for authenticated users
-  FeideAuthenticatedRole:
-    Type: AWS::IAM::Role
-    Properties:
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: 'Allow'
-            Principal:
-              Federated: 'cognito-identity.amazonaws.com'
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                'cognito-identity.amazonaws.com:aud':
-                  Ref: IdentityPool
-              'ForAnyValue:StringLike':
-                'cognito-identity.amazonaws.com:amr': authenticated
-      Policies:
-        - PolicyName: 'CognitoAuthorizedPolicy'
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: 'Allow'
-                Action:
-                  - 'mobileanalytics:PutEvents'
-                  - 'cognito-sync:*'
-                  - 'cognito-identity:*'
-                Resource: ['*']
-
-  # IAM role used for unauthenticated users
-  UnauthenticatedRole:
-    Type: AWS::IAM::Role
-    Properties:
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: 'Allow'
-            Principal:
-              Federated: 'cognito-identity.amazonaws.com'
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                'cognito-identity.amazonaws.com:aud':
-                  Ref: IdentityPool
-              'ForAnyValue:StringLike':
-                'cognito-identity.amazonaws.com:amr': unauthenticated
-      Policies:
-        - PolicyName: 'CognitoUnauthenticatedRolePolicy'
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: 'Allow'
-                Action:
-                  - 'mobileanalytics:PutEvents'
-                  - 'cognito-sync:*'
-                Resource: ['*']
-
-  # Assigns the roles to the Identity Pool
-  IdentityPoolRoleMapping:
-    Type: AWS::Cognito::IdentityPoolRoleAttachment
-    Properties:
-      IdentityPoolId: !Ref IdentityPool
-      Roles:
-        authenticated: !GetAtt FeideAuthenticatedRole.Arn
-        unauthenticated: !GetAtt UnauthenticatedRole.Arn
-
-  # IAM role used for users allowed to publish
-  PublisherRole:
-    Type: AWS::IAM::Role
-    Properties:
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: 'Allow'
-            Principal:
-              Federated: 'cognito-identity.amazonaws.com'
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                'cognito-identity.amazonaws.com:aud':
-                  Ref: IdentityPool
-              'ForAnyValue:StringLike':
-                'cognito-identity.amazonaws.com:amr': authenticated
-      Policies:
-        - PolicyName: PublisherPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: 'Allow'
-                Action:
-                  - 'mobileanalytics:PutEvents'
-                  - 'cognito-sync:*'
-                Resource: ['*']
-
-  FeideAuthenticatedGroup:
-    Type: AWS::Cognito::UserPoolGroup
-    Properties:
-      #      GroupName: FeideAuthenticatedGroup   #Not reqiured
-      Description: Common users authenticated with Feide
-      RoleArn: !GetAtt FeideAuthenticatedRole.Arn
-      UserPoolId: !Ref UserPool
-
-  PublisherGroup:
-    Type: AWS::Cognito::UserPoolGroup
-    Properties:
-      #      GroupName: PublisherGroup #Not reqiured
-      Description: Users allowed to publish
-      RoleArn: !GetAtt PublisherRole.Arn
-      UserPoolId: !Ref UserPool
 
 
   # ===============================
@@ -505,36 +133,23 @@ Resources:
         SemanticVersion: 1.1.2
       Parameters:
         AlmaApiUrl: !Ref AlmaApiUrl
-        AmazonCognitoDomain: !Ref UserPoolDomain
-        FrontendDomain: !Sub 'frontend${DomainBasePart}'
+        AmazonCognitoDomain: !ImportValue CognitoLoginUrl
+        FrontendDomain: !Ref ApplicationDomain
         BackendDomain: !Ref BackendDomain
         DomainCertificateArn: !Ref DomainCertificateArn
-        CognitoIdentityPoolId: !Ref IdentityPool
-        UserPoolId: !Ref UserPool
-        UserPoolAppClientId: !Ref UserPoolClient
-        RedirectSignInUrl: !Sub 'frontend${DomainBasePart}'
-        RedirectSignOutUrl: !Sub 'frontend${DomainBasePart}/logout'
+        CognitoIdentityPoolId: ImportValue !Ref IdentityPool
+        UserPoolId: !ImportValue CognitoUserPoolId
+        UserPoolAppClientId: !ImportValue CognitoUserPoolAppClientId
+        RedirectSignInUrl: !Ref ApplicationDomain
+        RedirectSignOutUrl: !Sub '${ApplicationDomain}/logout'
         OrcidBaseUrl: !Ref OrcidBaseUrl
         OrcidClientID: !Ref OrcidClientID
         OrcidClientSecret: !Ref OrcidClientSecret
-        OrcidRedirectUri: !Sub 'frontend${DomainBasePart}'
+        OrcidRedirectUri: !Ref ApplicationDomain
 
   # ===============================
   #  API / Backend
   # ===============================
-
-
-#  BackendLambdas:
-#    Type: AWS::CloudFormation::Stack
-#    Properties:
-#      TemplateURL: "https://nva-infrastructure-sandbox.s3-eu-west-1.amazonaws.com/deploy_backend.yml"
-#      Parameters:
-#        CognitoAuthorizerArn: !Ref UserPool
-#        BackendDomain: !Ref BackendDomain
-#        StorageBucket: !Ref NVAStorageBucket
-#        BareApiKey: !Ref BareApiKey
-#        BareHost: !Ref BareHost
-#        AlmaSruHost: !Ref AlmaSruHost
 
   SruLastPublication:  # nva-alma-proxy
     Type: AWS::Serverless::Application
@@ -543,7 +158,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/SruLastPublication
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !GetAtt UserPool.Arn
+        CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: alma
         AlmaSruHost: !Ref AlmaSruHost
@@ -555,7 +170,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaDoiTransformer
         SemanticVersion: 0.1.1
       Parameters:
-        CognitoAuthorizerArn: !GetAtt UserPool.Arn
+        CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: doi-transform
 
@@ -566,7 +181,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/ResourceApi
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !GetAtt UserPool.Arn
+        CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: resource
         # Reference to table containing resource data - refer to template?
@@ -579,7 +194,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/UploadMultipart
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !GetAtt UserPool.Arn
+        CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: upload
         S3UploadBucket: !Ref NVAStorageBucket #  nva-storage-test # S3 Bucket to upload files to  - refer to template?
@@ -591,7 +206,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PersonData
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !GetAtt UserPool.Arn
+        CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: person
         BareApiKey: !Ref BareApiKey
@@ -604,7 +219,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/NvaPublicationApi
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !GetAtt UserPool.Arn
+        CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: publication
         PublicationsTableName: 'nva_resources'
@@ -617,7 +232,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PublicationChannelRegister
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !GetAtt UserPool.Arn
+        CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: publication-channel
 
@@ -628,7 +243,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/nva-fetch-doi
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !GetAtt UserPool.Arn
+        CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: doi-fetch
 
@@ -639,7 +254,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/Projects
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !GetAtt UserPool.Arn
+        CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: project
 
@@ -650,16 +265,7 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/DoiProxy
         SemanticVersion: 0.1.0
       Parameters:
-        CognitoAuthorizerArn: !GetAtt UserPool.Arn
+        CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: doi
 
-
-
-Outputs:
-#  CognitoAuthenticationDomain:
-#    Description: url for the cognito authorizer
-#    Value: !Ref AuthenticationDomain
-  CognitoUserPoolId:
-    Description: Identifier of the UserPool in Cognito
-    Value: !GetAtt UserPool.Arn

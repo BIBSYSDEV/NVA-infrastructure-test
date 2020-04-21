@@ -14,7 +14,7 @@ Parameters:
   AuthenticationDomain:
     Type: String
     AllowedPattern: ^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$
-    Default: 'auth'
+    Default: 'nva-test'
     Description: The domain name for the domain that hosts the sign-up and sign-in pages for your application.
 
   FeideMetadataURL:
@@ -22,19 +22,14 @@ Parameters:
     Default:  https://idp-test.feide.no/simplesaml/saml2/idp/metadata.php
     Description: Link to the the identity provider details.
 
-  UserPoolClientCallbackURLs:
-    Type: List<String>
+  FrontendApplicationUrl:
+    Type: String
     Default: 'https://frontend.test.nva.aws.unit.no'
-    Description: A list of allowed redirect (callback) URLs for the identity providers.
-
-  UserPoolClientLogoutURLs:
-    Type: List<String>
-    Default: 'https://frontend.test.nva.aws.unit.no/logout'
-    Description: A list of allowed logout URLs for the identity providers.
+    Description: A base URL for the callbacks for the identity providers.
 
 Resources:
 
-  ExecutionRole:
+  TriggerExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -71,7 +66,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: python3.7
-      Role: !GetAtt ExecutionRole.Arn
+      Role: !GetAtt TriggerExecutionRole.Arn
       Code:
         ZipFile: |
           import json
@@ -133,7 +128,6 @@ Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: NVA-UserPool-test
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
       UsernameAttributes: [email]
@@ -212,7 +206,7 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref UserPool
-      Domain: !Ref CognitoDomain
+      Domain: !Ref AuthenticationDomain
 
   UserPoolIdentityProviderFeide:
     Type: AWS::Cognito::UserPoolIdentityProvider
@@ -233,7 +227,7 @@ Resources:
         email: mail
         family_name: sn
       UserPoolId: !Ref UserPool
-      ProviderName: !Sub '${AWS::StackName}-FeideIdP'
+      ProviderName: FeideIdentityProvider
       ProviderType: SAML
       ProviderDetails:
         MetadataURL: !Ref FeideMetadataURL
@@ -245,8 +239,12 @@ Resources:
       SupportedIdentityProviders:
         - !Ref UserPoolIdentityProviderFeide
       UserPoolId: !Ref UserPool
-      CallbackURLs: !Ref UserPoolClientCallbackURLs
-      LogoutURLs: !Ref UserPoolClientLogoutURLs
+      CallbackURLs:
+        -
+          !Ref FrontendApplicationUrl
+      LogoutURLs:
+        -
+          !Sub '${FrontendApplicationUrl}/logout'
       AllowedOAuthFlowsUserPoolClient: True
       AllowedOAuthFlows:
         - code
@@ -382,59 +380,38 @@ Resources:
       UserPoolId: !Ref UserPool
 
 
-  CognitoAuthorizerArnProperty:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: ARN for the cognito userpool used to authorize users
-      Name: CognitoAuthorizerArn
-      Tier: Standard
-      Type: String
-      Value: !GetAtt UserPool.Arn
-
-  CognitoIdentityPoolIdProperty:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: Identifier of the IdentityPool assosiated with the UserPool
-      Name: REACT_APP_AWS_COGNITO_IDENTITY_POOL_ID
-      Tier: Standard
-      Type: String
-      Value: !Ref IdentityPool
-
-  CognitoUserPoolIdProperty:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: Identifier of the UserPool
-      Name: REACT_APP_AWS_USER_POOLS_ID
-      Tier: Standard
-      Type: String
-      Value: !Ref UserPool
-
-  CognitoUserPoolAppClientIdProperty:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: Identifier to use for the app clients to access this user pool
-      Name: REACT_APP_AWS_USER_POOLS_WEB_CLIENT_ID
-      Tier: Standard
-      Type: String
-      Value: !Ref UserPoolClient
-
-  CognitoDomainProperty:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: Address of Cognito login endpoint
-      Name: REACT_APP_DOMAIN
-      Tier: Standard
-      Type: String
-      Value: !Ref CognitoDomain
-
-
 Outputs:
+  CognitoAuthorizerArn:
+    Description: ARN Identifier of the UserPool
+    Value: !GetAtt UserPool.Arn
+    Export:
+      Name: CognitoAuthorizerArn
   CognitoIdentityPoolId:
     Description: Identifier of the IdentityPool assosiated with the UserPool
     Value: !Ref IdentityPool
+    Export:
+      Name: CognitoIdentityPoolId
   CognitoUserPoolId:
     Description: Identifier of the UserPool in Cognito
     Value: !Ref UserPool
+    Export:
+      Name: CognitoUserPoolId
   CognitoUserPoolAppClientId:
     Description: Identifier to use for the app clients to access this user pool
     Value: !Ref UserPoolClient
+    Export:
+      Name: CognitoUserPoolAppClientId
+  CognitoLoginUrl:
+    Description: URL to the cognito login, domain for cognito
+    Value: !Sub
+      - 'https://${domain}.auth.${AWS::Region}.amazoncognito.com'
+      - { domain: !Ref AuthenticationDomain }
+    Export:
+      Name: CognitoLoginUrl
+  CognitoURN:
+    Description: URN of the cognito login to use in Feide
+    Value: !Sub
+      - 'urn:amazon:cognito:sp:${poolId}'
+      - { poolId: !Ref UserPool }
+    Export:
+      Name: CognitoURN
