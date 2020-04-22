@@ -42,10 +42,6 @@ Parameters:
     Description: Secret to authenticate for ORCID
     NoEcho: true
     Default: '{{resolve:secretsmanager:REACT_APP_ORCID_CLIENT_SECRET:SecretString}}'
-  OrcidRedirectUri:
-    Type: String
-    Description: RedirectUrl after login to ORCID
-    Default: https://frontend.test.nva.aws.unit.no/user
   AlmaApiUrl:
     Type: String
     Description: URL to ALMA Library services
@@ -62,7 +58,7 @@ Resources:
   NVADomain:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/template_domain.yml"
+      TemplateURL: "https://nva-infrastructure-sandbox.s3-eu-west-1.amazonaws.com/template_domain.yml"
 
 
   # ===============================
@@ -72,7 +68,7 @@ Resources:
   NVACognito:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/template_cognito.yml"
+      TemplateURL: "https://nva-infrastructure-sandbox.s3-eu-west-1.amazonaws.com/template_cognito.yml"
 
   # ===============================
   #  DynamoDB
@@ -85,7 +81,7 @@ Resources:
   NVAStorage:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/template_s3_storage.yml"
+      TemplateURL: "https://nva-infrastructure-sandbox.s3-eu-west-1.amazonaws.com/template_s3_storage.yml"
 
   # ===============================
   #  Frontend
@@ -114,7 +110,9 @@ Resources:
         OrcidBaseUrl: !Ref OrcidBaseUrl
         OrcidClientID: !Ref OrcidClientID
         OrcidClientSecret: !Ref OrcidClientSecret
-        OrcidRedirectUri: !Ref OrcidRedirectUri
+        OrcidRedirectUri: !Sub
+          - ${FrontendDomainBasePath}/user
+          - FrontendDomainBasePath: !ImportValue FrontendDomain
 
   # ===============================
   #  API / Backend
@@ -122,7 +120,7 @@ Resources:
   BackendLambdas:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "https://nva-infrastructure-test.s3-eu-west-1.amazonaws.com/deploy_backend.yml"
+      TemplateURL: "https://nva-infrastructure-sandbox.s3-eu-west-1.amazonaws.com/deploy_backend.yml"
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoUserPoolId
         BackendDomain: !ImportValue BackendApiDomain

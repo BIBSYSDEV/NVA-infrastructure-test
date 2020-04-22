@@ -11,7 +11,7 @@ bucket = s3.Bucket(sys.argv[1])
 try:
     bucket.object_versions.delete()
 except:
-    print("error deleteing versions:", sys.exc_info())
+    print("error deleting versions:", sys.exc_info())
 
 # if you want to delete the now-empty bucket as well, uncomment this line:
 bucket.delete()
