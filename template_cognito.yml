@@ -11,11 +11,11 @@ Description: CloudFormation parent template for setting up Cognito for Feide log
 #
 Parameters:
 
-  AuthenticationDomain:
+  AuthenticationDomainPrefix:
     Type: String
     AllowedPattern: ^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$
     Default: 'nva-test'
-    Description: The domain name for the domain that hosts the sign-up and sign-in pages for your application.
+    Description: The prefix for the Cognito domain that hosts the sign-up and sign-in pages for your application.
 
   FeideMetadataURL:
     Type: String
@@ -207,7 +207,7 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref UserPool
-      Domain: !Ref AuthenticationDomain
+      Domain: !Ref AuthenticationDomainPrefix
 
   UserPoolIdentityProviderFeide:
     Type: AWS::Cognito::UserPoolIdentityProvider
@@ -405,8 +405,8 @@ Outputs:
   CognitoLoginUrl:
     Description: URL to the cognito login, domain for cognito
     Value: !Sub
-      - 'https://${domain}.auth.${AWS::Region}.amazoncognito.com'
-      - { domain: !Ref AuthenticationDomain }
+      - 'https://${domainPrefix}.auth.${AWS::Region}.amazoncognito.com'
+      - { domainPrefix: !Ref AuthenticationDomainPrefix }
     Export:
       Name: CognitoLoginUrl
   CognitoURN:
@@ -416,3 +416,10 @@ Outputs:
       - { poolId: !Ref UserPool }
     Export:
       Name: CognitoURN
+  CognitoDomain:
+    Description: Domain for cognito login
+    Value: !Sub
+      - '${domainPrefix}.auth.${AWS::Region}.amazoncognito.com'
+      - { domainPrefix: !Ref AuthenticationDomainPrefix }
+    Export:
+      Name: CognitoDomain

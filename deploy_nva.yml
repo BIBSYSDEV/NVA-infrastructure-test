@@ -140,7 +140,7 @@ Resources:
         SemanticVersion: 1.1.2
       Parameters:
         AlmaApiUrl: !Ref AlmaApiUrl
-        AmazonCognitoDomain: !ImportValue CognitoLoginUrl
+        AmazonCognitoDomain: !ImportValue CognitoDomain
         FrontendDomain: !Ref ApplicationDomain
         BackendDomain: !Sub 'https://${ApiCustomDomain}/'
         DomainCertificateArn: !Ref ApplicationDomainCertificateArn
@@ -199,7 +199,7 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/UploadMultipart
-        SemanticVersion: 0.1.0
+        SemanticVersion: 0.1.1
       Parameters:
         CognitoAuthorizerArn: !ImportValue CognitoAuthorizerArn
         CustomDomain: !Ref ApiCustomDomain
