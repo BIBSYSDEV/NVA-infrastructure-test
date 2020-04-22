@@ -144,11 +144,11 @@ Resources:
         FrontendDomain: !Ref ApplicationDomain
         BackendDomain: !Sub 'https://${ApiCustomDomain}/'
         DomainCertificateArn: !Ref ApplicationDomainCertificateArn
-        CognitoIdentityPoolId: ImportValue CognitoIdentityPoolId
+        CognitoIdentityPoolId: !ImportValue CognitoIdentityPoolId
         UserPoolId: !ImportValue CognitoUserPoolId
         UserPoolAppClientId: !ImportValue CognitoUserPoolAppClientId
-        RedirectSignInUrl: !Ref ApplicationDomain
-        RedirectSignOutUrl: !Sub '${ApplicationDomain}/logout'
+        RedirectSignInUrl: !Sub 'https://${ApplicationDomain}'
+        RedirectSignOutUrl: !Sub 'https://${ApplicationDomain}/logout'
         OrcidBaseUrl: !Ref OrcidBaseUrl
         OrcidClientID: !Ref OrcidClientID
         OrcidClientSecret: !Ref OrcidClientSecret
