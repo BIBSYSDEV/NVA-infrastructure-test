@@ -6,24 +6,28 @@ Parameters:
   CognitoAuthorizerArn:
     Type: String
     Description: Reference to Cognito UserPool for the stage
-    Default: arn:aws:cognito-idp:eu-west-1:812481234721:userpool/eu-west-1_wsHsxCiT4
+#    Default: arn:aws:cognito-idp:eu-west-1:812481234721:userpool/eu-west-1_wsHsxCiT4
   BackendDomain:
     Type: String
     Description: Domainname for the backend api
-    Default: api.test.nva.aws.unit.no
+#    Default: api.test.nva.aws.unit.no
+  StorageBucket:
+    Type: String
+    Description: BucketName for storage
+#    Default: nva-storage-test
   BareApiKey:
     Type: String
     Description: Key to access bare
     NoEcho: true
-    Default: '{{resolve:secretsmanager:bareApiKey:SecretString}}'
+#    Default: '{{resolve:secretsmanager:bareApiKey:SecretString}}'
   BareHost:
     Type: String
     Description: Address to bare
-    Default: alfa-a.bibsys.no
+#    Default: alfa-a.bibsys.no
   AlmaSruHost:
     Type: String
     Description: Address to Alma-SRU
-    Default: bibsys.alma.exlibrisgroup.com/view/sru/47BIBSYS_NETWORK
+#    Default: bibsys.alma.exlibrisgroup.com/view/sru/47BIBSYS_NETWORK
 
 Resources:
 
@@ -73,7 +77,7 @@ Resources:
         CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
         CustomDomain: !Ref BackendDomain
         CustomDomainBasePath: upload
-        S3UploadBucket: nva-storage-test # S3 Bucket to upload files to  - refer to template?
+        S3UploadBucket: !Ref StorageBucket #  nva-storage-test # S3 Bucket to upload files to  - refer to template?
 
   PersonData: # nva-bare-proxy
     Type: AWS::Serverless::Application
@@ -101,16 +105,16 @@ Resources:
         PublicationsTableName: 'nva_resources'
         PublicationsByOwnerIndexName: 'ByPublisher'
 
-    PublicationChannelRegister: # nva-channel-registry
-      Type: AWS::Serverless::Application
-      Properties:
-        Location:
-          ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PublicationChannelRegister
-          SemanticVersion: 0.1.0
-        Parameters:
-          CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
-          CustomDomain: !Ref BackendDomain
-          CustomDomainBasePath: publication-channel
+  PublicationChannelRegister: # nva-channel-registry
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-1:884807050265:applications/PublicationChannelRegister
+        SemanticVersion: 0.1.0
+      Parameters:
+        CognitoAuthorizerArn: !Ref CognitoAuthorizerArn
+        CustomDomain: !Ref BackendDomain
+        CustomDomainBasePath: publication-channel
 
   nvafetchdoi: # nva-fetch-doi
     Type: AWS::Serverless::Application
